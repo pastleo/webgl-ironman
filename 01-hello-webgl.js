@@ -46,3 +46,32 @@ void main() {
 const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
 const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
 const program = createProgram(gl, vertexShader, fragmentShader);
+
+const positionAttributeLocation = gl.getAttribLocation(program, 'a_position');
+console.log({ positionAttributeLocation })
+
+const positionBuffer = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+
+gl.enableVertexAttribArray(positionAttributeLocation);
+gl.vertexAttribPointer(
+  positionAttributeLocation,
+  2, // size
+  gl.FLOAT, // type
+  false, // normalize
+  0, // stride
+  0, // offset
+);
+
+gl.bufferData(
+  gl.ARRAY_BUFFER,
+  new Float32Array([
+    0, 0.2,
+    0.2, -0.1,
+    -0.2, -0.1,
+  ]),
+  gl.STATIC_DRAW,
+);
+
+gl.useProgram(program);
+gl.drawArrays(gl.TRIANGLES, 0, 3);
