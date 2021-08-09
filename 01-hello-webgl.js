@@ -2,6 +2,10 @@ const canvas = document.getElementById('canvas');
 const gl = canvas.getContext('webgl');
 window.gl = gl;
 
+canvas.width = canvas.clientWidth;
+canvas.height = canvas.clientHeight;
+gl.viewport(0, 0, canvas.width, canvas.height);
+
 gl.clearColor(108/255, 225/255, 153/255, 1);
 gl.clear(gl.COLOR_BUFFER_BIT);
 
@@ -31,9 +35,14 @@ function createProgram(gl, vertexShader, fragmentShader) {
 
 const vertexShaderSource = `
 attribute vec2 a_position;
+
+uniform vec2 u_resolution;
  
 void main() {
-  gl_Position = vec4(a_position, 0, 1);
+  gl_Position = vec4(
+    a_position / u_resolution * vec2(2, -2) + vec2(-1, 1),
+    0, 1
+  );
 }
 `;
  
@@ -48,7 +57,7 @@ const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource
 const program = createProgram(gl, vertexShader, fragmentShader);
 
 const positionAttributeLocation = gl.getAttribLocation(program, 'a_position');
-console.log({ positionAttributeLocation })
+const resolutionUniformLocation = gl.getUniformLocation(program, 'u_resolution');
 
 const positionBuffer = gl.createBuffer();
 gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
@@ -66,12 +75,13 @@ gl.vertexAttribPointer(
 gl.bufferData(
   gl.ARRAY_BUFFER,
   new Float32Array([
-    0, 0.2,
-    0.2, -0.1,
-    -0.2, -0.1,
+    150, 60,
+    180, 82.5,
+    120, 82.5,
   ]),
   gl.STATIC_DRAW,
 );
 
 gl.useProgram(program);
+gl.uniform2f(resolutionUniformLocation, canvas.width, canvas.height);
 gl.drawArrays(gl.TRIANGLES, 0, 3);
