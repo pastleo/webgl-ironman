@@ -526,13 +526,13 @@ gl_FragColor = vec4(0.4745, 0.3333, 0.2823, 1);
 
 varying 這功能可以讓 vertex shader 輸出資料給 fragment shader 使用，但是兩者執行的回合數顯然是對不起來，假設回到一個低解析度三角形的狀況如下圖，vertex shader 執行三次得到三個頂點，灰色的方格每格執行一次 fragment shader 計算顏色：
 
-![vertex-fragment](https://static.pastleo.me/assets/day4-vertex-fragment-210811222933.svg)
+![vertex-fragment](https://static.pastleo.me/assets/day5-vertex-fragment-210811222933.svg)
 
 vertex #1 輸出一組資料、vertex #2 輸出一組資料、vertex #3 輸出一組資料，那麼 fragment #2, fragment #3, fragment #4 這些介於中間 pixel 執行的 fragment shader 會拿到什麼資料？答案是：WebGL 會把頂點與頂點之間輸出的 varying 做平滑化！
 
 假設 vertex #1 輸出 `v_number = 0.2`、vertex #2 輸出 `v_number = 1.1`，那麼介於 vertex #1, #2 之間的 fragment #2 將拿到兩個點輸出的中間值，並且越接近某個頂點的 pixel 就會得到越接近該頂點輸出的 varying，筆者畫了一張簡易的示意圖舉例 varying 平滑化的樣子：
 
-![varying](https://static.pastleo.me/assets/day4-varying-210811222717.svg)
+![varying](https://static.pastleo.me/assets/day5-varying-210811222717.svg)
 
 這個特性不僅解決問題，也讓筆者覺得相當有意思，有種當初玩 flash 移動補間動畫的感覺
 
