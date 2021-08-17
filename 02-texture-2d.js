@@ -5,12 +5,14 @@ attribute vec2 a_position;
 attribute vec2 a_texcoord;
 
 uniform vec2 u_resolution;
+uniform vec2 u_offset;
 
 varying vec2 v_texcoord;
 
 void main() {
+  vec2 position = a_position + u_offset;
   gl_Position = vec4(
-    a_position / u_resolution * vec2(2, -2) + vec2(-1, 1),
+    position / u_resolution * vec2(2, -2) + vec2(-1, 1),
     0, 1
   );
   v_texcoord = a_texcoord;
@@ -44,6 +46,7 @@ async function setup() {
   const uniforms = {
     resolution: gl.getUniformLocation(program, 'u_resolution'),
     texture: gl.getUniformLocation(program, 'u_texture'),
+    offset: gl.getUniformLocation(program, 'u_offset'),
   };
 
   const textures = await Promise.all([
@@ -89,13 +92,13 @@ async function setup() {
   gl.bufferData(
     gl.ARRAY_BUFFER,
     new Float32Array([
-      100, 50, // A
-      250, 50, // B
-      250, 200, // C
+      0, 0, // A
+      150, 0, // B
+      150, 150, // C
 
-      100, 50, // D
-      250, 200, // E
-      100, 200, // F
+      0, 0, // D
+      150, 150, // E
+      0, 150, // F
     ]),
     gl.STATIC_DRAW,
   );
@@ -128,13 +131,19 @@ async function setup() {
     gl.STATIC_DRAW,
   );
 
+  const directionDeg = Math.random() * 2 * Math.PI;
+
   return {
     gl,
     program, attributes, uniforms,
     buffers, textures,
     state: {
       texture: 0,
+      offset: [0, 0],
+      direction: [Math.cos(directionDeg), Math.sin(directionDeg)],
+      speed: 0.08,
     },
+    time: 0,
   };
 }
 
@@ -154,6 +163,8 @@ function render(app) {
 
   gl.uniform2f(uniforms.resolution, gl.canvas.width, gl.canvas.height);
 
+  gl.uniform2fv(uniforms.offset, state.offset);
+
   // texture uniform
   const textureUnit = 0;
   gl.bindTexture(gl.TEXTURE_2D, textures[state.texture]);
@@ -161,6 +172,35 @@ function render(app) {
   gl.uniform1i(uniforms.texture, textureUnit);
   
   gl.drawArrays(gl.TRIANGLES, 0, 6);
+}
+
+function startLoop(app, now = 0) {
+  const { state, gl } = app;
+  const timeDiff = now - app.time;
+  app.time = now;
+
+  state.offset = state.offset.map(
+    (v, i) => v + state.direction[i] * timeDiff * state.speed
+  );
+
+  if (state.offset[0] + 150 > gl.canvas.width) {
+    state.direction[0] *= -1;
+    state.offset[0] = gl.canvas.width - 150;
+  } else if (state.offset[0] < 0) {
+    state.direction[0] *= -1;
+    state.offset[0] = 0;
+  }
+
+  if (state.offset[1] + 150 > gl.canvas.height) {
+    state.direction[1] *= -1;
+    state.offset[1] = gl.canvas.height - 150;
+  } else if (state.offset[1] < 0) {
+    state.direction[1] *= -1;
+    state.offset[1] = 0;
+  }
+
+  render(app);
+  requestAnimationFrame(now => startLoop(app, now));
 }
 
 async function main() {
@@ -172,11 +212,10 @@ async function main() {
   controlsForm.addEventListener('input', () => {
     const formData = new FormData(controlsForm);
     app.state.texture = parseInt(formData.get('texture'));
-
-    render(app);
+    app.state.speed = parseFloat(formData.get('speed'));
   });
 
-  render(app);
+  startLoop(app);
 }
 
 main();
