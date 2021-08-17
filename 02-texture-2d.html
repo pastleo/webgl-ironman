@@ -13,9 +13,25 @@
     width: 100%;
     height: 100%;
   }
+  #controls {
+    position: fixed;
+    top: 0;
+    right: 0;
+    margin: 1rem;
+  }
 </style>
 <body>
   <canvas id="canvas"></canvas>
+  <form id="controls">
+    <div>
+      <input type="radio" id="cat1" name="texture" value="0" checked>
+      <label for="cat1">Cat 1</label>
+      <input type="radio" id="cat2" name="texture" value="1">
+      <label for="cat2">Cat 2</label>
+      <input type="radio" id="penguin" name="texture" value="2">
+      <label for="penguin">Penguin</label>
+    </div>
+  </form>
   <script type="module" src="02-texture-2d.js"></script>
 </body>
 </html>

@@ -46,42 +46,29 @@ async function setup() {
     texture: gl.getUniformLocation(program, 'u_texture'),
   };
 
-  // const image = await loadImage('https://i.imgur.com/ISdY40yh.jpg');
-  // const image = await loadImage('https://i.imgur.com/vryPVknh.jpg');
-  const texture = gl.createTexture();
-  gl.bindTexture(gl.TEXTURE_2D, texture);
-  // gl.texImage2D(
-  //   gl.TEXTURE_2D,
-  //   0, // level
-  //   gl.RGB, // internalFormat
-  //   gl.RGB, // format
-  //   gl.UNSIGNED_BYTE, // type
-  //   image, // data
-  // );
+  const textures = await Promise.all([
+    'https://i.imgur.com/EDLB71ih.jpg',
+    'https://i.imgur.com/KT2nqZNh.jpg',
+    'https://i.imgur.com/diRWq5ph.jpg',
+  ].map(async url => {
+    const image = await loadImage(url);
+    const texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texImage2D(
+      gl.TEXTURE_2D,
+      0, // level
+      gl.RGB, // internalFormat
+      gl.RGB, // format
+      gl.UNSIGNED_BYTE, // type
+      image, // data
+    );
 
-  const whiteColor = [255, 255, 255, 255];
-  const blackColor = [0, 0, 0, 255];
-  gl.texImage2D(
-    gl.TEXTURE_2D,
-    0, // level
-    gl.RGBA, // internalFormat
-    2, // width
-    2, // height
-    0, // border
-    gl.RGBA, // format
-    gl.UNSIGNED_BYTE, // type
-    new Uint8Array([
-      ...whiteColor, ...blackColor,
-      ...blackColor, ...whiteColor,
-    ])
-  );
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
 
-  // gl.generateMipmap(gl.TEXTURE_2D);
-
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+    return texture;
+  }));
 
   const buffers = {};
 
@@ -131,12 +118,12 @@ async function setup() {
     gl.ARRAY_BUFFER,
     new Float32Array([
       0, 0, // A
-      8, 0, // B
-      8, 8, // C
+      1, 0, // B
+      1, 1, // C
 
       0, 0, // D
-      8, 8, // E
-      0, 8, // F
+      1, 1, // E
+      0, 1, // F
     ]),
     gl.STATIC_DRAW,
   );
@@ -144,7 +131,10 @@ async function setup() {
   return {
     gl,
     program, attributes, uniforms,
-    buffers, texture,
+    buffers, textures,
+    state: {
+      texture: 0,
+    },
   };
 }
 
@@ -152,7 +142,8 @@ function render(app) {
   const {
     gl,
     program, uniforms,
-    texture,
+    textures,
+    state
   } = app;
 
   gl.canvas.width = gl.canvas.clientWidth;
@@ -165,7 +156,7 @@ function render(app) {
 
   // texture uniform
   const textureUnit = 0;
-  gl.bindTexture(gl.TEXTURE_2D, texture);
+  gl.bindTexture(gl.TEXTURE_2D, textures[state.texture]);
   gl.activeTexture(gl.TEXTURE0 + textureUnit);
   gl.uniform1i(uniforms.texture, textureUnit);
   
@@ -176,6 +167,14 @@ async function main() {
   const app = await setup();
   window.app = app;
   window.gl = app.gl;
+
+  const controlsForm = document.getElementById('controls');
+  controlsForm.addEventListener('input', () => {
+    const formData = new FormData(controlsForm);
+    app.state.texture = parseInt(formData.get('texture'));
+
+    render(app);
+  });
 
   render(app);
 }
