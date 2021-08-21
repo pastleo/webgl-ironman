@@ -19,11 +19,15 @@
     right: 0;
     margin: 1rem;
   }
+  .py-1 {
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+  }
 </style>
 <body>
   <canvas id="canvas"></canvas>
   <form id="controls">
-    <div>
+    <div class="py-1">
       <input type="radio" id="cat1" name="texture" value="0" checked>
       <label for="cat1">Cat 1</label>
       <input type="radio" id="cat2" name="texture" value="1">
@@ -31,12 +35,40 @@
       <input type="radio" id="penguin" name="texture" value="2">
       <label for="penguin">Penguin</label>
     </div>
-    <div>
+    <div class="py-1">
+      <label for="speed">Speed</label>
       <input
         type="range" id="speed" name="speed"
         min="0" max="0.5" step="0.01" value="0.08"
       >
-      <label for="speed">Speed</label>
+    </div>
+    <div class="py-1">
+      <label for="translate-x">TranslateX</label>
+      <input
+        type="range" id="translate-x" name="translate-x"
+        min="-150" max="150" value="0"
+      >
+    </div>
+    <div class="py-1">
+      <label for="translate-y">TranslateY</label>
+      <input
+        type="range" id="translate-y" name="translate-y"
+        min="-150" max="150" value="0"
+      >
+    </div>
+    <div class="py-1">
+      <label for="scale">Scale</label>
+      <input
+        type="range" id="scale" name="scale"
+        min="0" max="10" value="1" step="0.1"
+      >
+    </div>
+    <div class="py-1">
+      <label for="rotation">Rotation</label>
+      <input
+        type="range" id="rotation" name="rotation"
+        min="0" max="360" value="0"
+      >
     </div>
   </form>
   <script type="module" src="02-texture-2d.js"></script>
