@@ -42,6 +42,7 @@ async function setup() {
   };
 
   const buffers = {};
+  const modelBufferArrays = createModelBufferArrays();
 
   // a_position
   buffers.position = gl.createBuffer();
@@ -59,7 +60,7 @@ async function setup() {
 
   gl.bufferData(
     gl.ARRAY_BUFFER,
-    new Float32Array([]),
+    new Float32Array(modelBufferArrays.attribs.a_position),
     gl.STATIC_DRAW,
   );
 
@@ -79,15 +80,19 @@ async function setup() {
 
   gl.bufferData(
     gl.ARRAY_BUFFER,
-    new Float32Array([]),
+    new Float32Array(modelBufferArrays.attribs.a_color),
     gl.STATIC_DRAW,
   );
 
   return {
     gl,
     program, attributes, uniforms,
-    buffers,
+    buffers, modelBufferArrays,
     state: {
+      projectionZ: 400,
+      translate: [150, 100, 0],
+      rotate: [degToRad(30), degToRad(30), degToRad(0)],
+      scale: [1, 1, 1],
     },
     time: 0,
   };
@@ -97,6 +102,7 @@ function render(app) {
   const {
     gl,
     program, uniforms,
+    modelBufferArrays,
     state,
   } = app;
 
@@ -106,8 +112,17 @@ function render(app) {
 
   gl.useProgram(program);
 
-  const viewMatrix = matrix4.identity();
-  const worldMatrix = matrix4.identity();
+  gl.enable(gl.CULL_FACE);
+  gl.enable(gl.DEPTH_TEST);
+
+  const viewMatrix = matrix4.projection(gl.canvas.width, gl.canvas.height, state.projectionZ);
+  const worldMatrix = matrix4.multiply(
+    matrix4.translate(...state.translate),
+    matrix4.xRotate(state.rotate[0]),
+    matrix4.yRotate(state.rotate[1]),
+    matrix4.zRotate(state.rotate[2]),
+    matrix4.scale(...state.scale),
+  );
 
   gl.uniformMatrix4fv(
     uniforms.matrix,
@@ -115,7 +130,7 @@ function render(app) {
     matrix4.multiply(viewMatrix, worldMatrix),
   );
 
-  gl.drawArrays(gl.TRIANGLES, 0, 0);
+  gl.drawArrays(gl.TRIANGLES, 0, modelBufferArrays.numElements);
 }
 
 // function startLoop(app, now = 0) {
@@ -133,10 +148,114 @@ async function main() {
 
   const controlsForm = document.getElementById('controls');
   controlsForm.addEventListener('input', () => {
-    // const formData = new FormData(controlsForm);
+    const formData = new FormData(controlsForm);
+
+    app.state.projectionZ = parseFloat(formData.get('projection-z'));
+    app.state.translate[0] = parseFloat(formData.get('translate-x'));
+    app.state.translate[1] = parseFloat(formData.get('translate-y'));
+    app.state.translate[2] = parseFloat(formData.get('translate-z'));
+    app.state.rotate[0] = parseFloat(formData.get('rotation-x')) * Math.PI / 180;
+    app.state.rotate[1] = parseFloat(formData.get('rotation-y')) * Math.PI / 180;
+    app.state.rotate[2] = parseFloat(formData.get('rotation-z')) * Math.PI / 180;
+    app.state.scale[0] = parseFloat(formData.get('scale-x'));
+    app.state.scale[1] = parseFloat(formData.get('scale-y'));
+    app.state.scale[2] = parseFloat(formData.get('scale-z'));
+
+    render(app);
   });
 
   // startLoop(app);
   render(app);
 }
 main();
+
+function createModelBufferArrays() {
+  // positions
+  const a = 40, b = 200, c = 60, d = 45;
+
+  const points = [0, d].flatMap(z => ([
+    [0, 0, z], // 0, 13
+    [0, b, z],
+    [a, b, z],
+    [a, 0, z],
+    [2*a+c, 0, z], // 4, 17
+    [a, a, z],
+    [2*a+c, a, z],
+    [a, 2*a, z],
+    [2*a+c, 2*a, z], // 8, 21
+    [a, 3*a, z],
+    [2*a+c, 3*a, z],
+    [a+c, a, z],
+    [a+c, 2*a, z], // 12, 25
+  ]));
+  const a_position = [
+    ...rectVertices(points[0], points[1], points[2], points[3]), // 0
+    ...rectVertices(points[3], points[5], points[6], points[4]),
+    ...rectVertices(points[7], points[9], points[10], points[8]),
+    ...rectVertices(points[11], points[12], points[8], points[6]),
+    ...rectVertices(points[13], points[16], points[15], points[14]), // 4
+    ...rectVertices(points[16], points[17], points[19], points[18]),
+    ...rectVertices(points[20], points[21], points[23], points[22]),
+    ...rectVertices(points[24], points[19], points[21], points[25]),
+    ...rectVertices(points[0], points[13], points[14], points[1]), // 8
+    ...rectVertices(points[0], points[4], points[17], points[13]),
+    ...rectVertices(points[4], points[10], points[23], points[17]),
+    ...rectVertices(points[9], points[22], points[23], points[10]),
+    ...rectVertices(points[9], points[2], points[15], points[22]), // 12
+    ...rectVertices(points[2], points[1], points[14], points[15]),
+    ...rectVertices(points[5], points[7], points[20], points[18]),
+    ...rectVertices(points[5], points[18], points[24], points[11]),
+    ...rectVertices(points[11], points[24], points[25], points[12]), // 16
+    ...rectVertices(points[7], points[12], points[25], points[20]),
+  ];
+
+  // a_color
+  const frontColor = [108/255, 225/255, 153/255];
+  const backColor = randomColor();
+  const a_color = [
+    ...rectColor(frontColor), // 0
+    ...rectColor(frontColor),
+    ...rectColor(frontColor),
+    ...rectColor(frontColor),
+    ...rectColor(backColor), // 4
+    ...rectColor(backColor),
+    ...rectColor(backColor),
+    ...rectColor(backColor),
+    ...rectColor(randomColor()), // 8
+    ...rectColor(randomColor()),
+    ...rectColor(randomColor()),
+    ...rectColor(randomColor()),
+    ...rectColor(randomColor()), // 12
+    ...rectColor(randomColor()),
+    ...rectColor(randomColor()),
+    ...rectColor(randomColor()),
+    ...rectColor(randomColor()), // 16
+    ...rectColor(randomColor()),
+  ];
+
+  return {
+    numElements: a_position.length / 3,
+    attribs: {
+      a_position, a_color,
+    },
+  }
+}
+
+function rectVertices(a, b, c, d) {
+  return [
+    ...a, ...b, ...c,
+    ...a, ...c, ...d,
+  ];
+}
+
+function rectColor(color) {
+  return Array(6).fill(color).flat();
+}
+
+function randomColor() {
+  return [Math.random(), Math.random(), Math.random()];
+}
+
+function degToRad(deg) {
+  return deg * Math.PI / 180;
+}
