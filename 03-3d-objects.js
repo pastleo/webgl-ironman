@@ -91,7 +91,7 @@ async function setup() {
     state: {
       fieldOfView: 45 * Math.PI / 180,
       translate: [150, 100, 0],
-      rotate: [degToRad(30), degToRad(30), degToRad(0)],
+      rotate: [degToRad(210), degToRad(30), degToRad(0)],
       scale: [1, 1, 1],
     },
     time: 0,
@@ -115,7 +115,12 @@ function render(app) {
   gl.enable(gl.CULL_FACE);
   gl.enable(gl.DEPTH_TEST);
 
-  const viewMatrix = matrix4.perspective(state.fieldOfView, gl.canvas.width / gl.canvas.height, 0.1, 2000);
+  const cameraMatrix = matrix4.translate(250, 0, 400);
+
+  const viewMatrix = matrix4.multiply(
+    matrix4.perspective(state.fieldOfView, gl.canvas.width / gl.canvas.height, 0.1, 2000),
+    matrix4.inverse(cameraMatrix),
+  );
   const worldMatrix = matrix4.multiply(
     matrix4.translate(...state.translate),
     matrix4.xRotate(state.rotate[0]),
