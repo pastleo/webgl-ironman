@@ -93,6 +93,8 @@ async function setup() {
       translate: [150, 100, 0],
       rotate: [degToRad(210), degToRad(30), degToRad(0)],
       scale: [1, 1, 1],
+      cameraPosition: [250, 0, 400],
+      cameraVelocity: [0, 0, 0],
     },
     time: 0,
   };
@@ -115,7 +117,7 @@ function render(app) {
   gl.enable(gl.CULL_FACE);
   gl.enable(gl.DEPTH_TEST);
 
-  const cameraMatrix = matrix4.translate(250, 0, 400);
+  const cameraMatrix = matrix4.lookAt(state.cameraPosition, [250, 0, 0], [0, 1, 0]);
 
   const viewMatrix = matrix4.multiply(
     matrix4.perspective(state.fieldOfView, gl.canvas.width / gl.canvas.height, 0.1, 2000),
@@ -138,13 +140,20 @@ function render(app) {
   gl.drawArrays(gl.TRIANGLES, 0, modelBufferArrays.numElements);
 }
 
-// function startLoop(app, now = 0) {
-//   const timeDiff = now - app.time;
-//   app.time = now;
+function startLoop(app, now = 0) {
+  const timeDiff = now - app.time;
+  app.time = now;
 
-//   render(app, timeDiff);
-//   requestAnimationFrame(now => startLoop(app, now));
-// }
+  app.state.cameraPosition[0] += app.state.cameraVelocity[0] * timeDiff;
+  app.state.cameraPosition[1] += app.state.cameraVelocity[1] * timeDiff;
+  app.state.cameraPosition[2] += app.state.cameraVelocity[2] * timeDiff;
+  document.getElementById('camera-position').textContent = (
+    `cameraPosition: [${app.state.cameraPosition.map(f => f.toFixed(2)).join(', ')}]`
+  );
+
+  render(app, timeDiff);
+  requestAnimationFrame(now => startLoop(app, now));
+}
 
 async function main() {
   const app = await setup();
@@ -165,12 +174,29 @@ async function main() {
     app.state.scale[0] = parseFloat(formData.get('scale-x'));
     app.state.scale[1] = parseFloat(formData.get('scale-y'));
     app.state.scale[2] = parseFloat(formData.get('scale-z'));
-
-    render(app);
   });
 
-  // startLoop(app);
-  render(app);
+  document.addEventListener('keydown', event => {
+    handleKeyDown(app, event);
+  });
+  document.addEventListener('keyup', event => {
+    handleKeyUp(app, event);
+  });
+
+  app.gl.canvas.addEventListener('mousedown', event => {
+    handlePointerDown(app, event);
+  });
+  app.gl.canvas.addEventListener('mouseup', () => {
+    handlePointerUp(app);
+  });
+  app.gl.canvas.addEventListener('touchstart', event => {
+    handlePointerDown(app, event.touches[0]);
+  });
+  app.gl.canvas.addEventListener('touchend', () => {
+    handlePointerUp(app);
+  });
+
+  startLoop(app);
 }
 main();
 
@@ -263,4 +289,67 @@ function randomColor() {
 
 function degToRad(deg) {
   return deg * Math.PI / 180;
+}
+
+function handleKeyDown(app, event) {
+  switch (event.code) {
+    case 'KeyA':
+    case 'ArrowLeft':
+      app.state.cameraVelocity[0] = -0.5;
+      break;
+    case 'KeyD':
+    case 'ArrowRight':
+      app.state.cameraVelocity[0] = 0.5;
+      break;
+    case 'KeyW':
+    case 'ArrowUp':
+      app.state.cameraVelocity[1] = 0.5;
+      break;
+    case 'KeyS':
+    case 'ArrowDown':
+      app.state.cameraVelocity[1] = -0.5;
+      break;
+  }
+}
+
+function handleKeyUp(app, event) {
+  switch (event.code) {
+    case 'KeyA':
+    case 'ArrowLeft':
+    case 'KeyD':
+    case 'ArrowRight':
+      app.state.cameraVelocity[0] = 0;
+      break;
+    case 'KeyW':
+    case 'ArrowUp':
+    case 'KeyS':
+    case 'ArrowDown':
+      app.state.cameraVelocity[1] = 0;
+      break;
+  }
+}
+
+function handlePointerDown(app, touchOrMouseEvent) {
+  const x = touchOrMouseEvent.pageX - app.gl.canvas.width / 2;
+  const y = touchOrMouseEvent.pageY - app.gl.canvas.height / 2;
+
+  if (x * x > y * y) {
+    if (x > 0) {
+      app.state.cameraVelocity[0] = 0.5;
+    } else {
+      app.state.cameraVelocity[0] = -0.5;
+    }
+  } else {
+    if (y < 0) {
+      app.state.cameraVelocity[1] = 0.5;
+    } else {
+      app.state.cameraVelocity[1] = -0.5;
+    }
+  }
+}
+
+function handlePointerUp(app) {
+  app.state.cameraVelocity[0] = 0;
+  app.state.cameraVelocity[1] = 0;
+  app.state.cameraVelocity[2] = 0;
 }
