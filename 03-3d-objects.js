@@ -1,5 +1,6 @@
 import { createShader, createProgram } from './lib/utils.js';
 import { matrix4 } from './lib/matrix.js';
+import * as twgl from 'https://unpkg.com/twgl.js@4.19.2/dist/4.x/twgl-full.module.js';
 
 const vertexShaderSource = `
 attribute vec4 a_position;
@@ -18,10 +19,12 @@ void main() {
 const fragmentShaderSource = `
 precision highp float;
 
+uniform vec3 u_color;
+
 varying vec3 v_color;
 
 void main() {
-  gl_FragColor = vec4(v_color, 1);
+  gl_FragColor = vec4(v_color + u_color, 1);
 }
 `;
 
@@ -39,59 +42,102 @@ async function setup() {
   };
   const uniforms = {
     matrix: gl.getUniformLocation(program, 'u_matrix'),
+    color: gl.getUniformLocation(program, 'u_color'),
   };
 
-  const buffers = {};
-  const modelBufferArrays = createModelBufferArrays();
+  const objects = {};
 
-  // a_position
-  buffers.position = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
+  { // pModel
+    const { attribs, numElements } = createModelBufferArrays();
 
-  gl.enableVertexAttribArray(attributes.position);
-  gl.vertexAttribPointer(
-    attributes.position,
-    3, // size
-    gl.FLOAT, // type
-    false, // normalize
-    0, // stride
-    0, // offset
-  );
+    const buffers = {};
 
-  gl.bufferData(
-    gl.ARRAY_BUFFER,
-    new Float32Array(modelBufferArrays.attribs.a_position),
-    gl.STATIC_DRAW,
-  );
+    // a_position
+    buffers.position = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
 
-  // a_color
-  buffers.position = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
+    gl.enableVertexAttribArray(attributes.position);
+    gl.vertexAttribPointer(
+      attributes.position,
+      3, // size
+      gl.FLOAT, // type
+      false, // normalize
+      0, // stride
+      0, // offset
+    );
 
-  gl.enableVertexAttribArray(attributes.color);
-  gl.vertexAttribPointer(
-    attributes.color,
-    3, // size
-    gl.FLOAT, // type
-    false, // normalize
-    0, // stride
-    0, // offset
-  );
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array(attribs.a_position),
+      gl.STATIC_DRAW,
+    );
 
-  gl.bufferData(
-    gl.ARRAY_BUFFER,
-    new Float32Array(modelBufferArrays.attribs.a_color),
-    gl.STATIC_DRAW,
-  );
+    // a_color
+    buffers.color = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.color);
+
+    gl.enableVertexAttribArray(attributes.color);
+    gl.vertexAttribPointer(
+      attributes.color,
+      3, // size
+      gl.FLOAT, // type
+      false, // normalize
+      0, // stride
+      0, // offset
+    );
+
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array(attribs.a_color),
+      gl.STATIC_DRAW,
+    );
+
+    objects.pModel = {
+      attribs, numElements,
+    };
+  }
+
+  { // ball
+    const attribs = twgl.primitives.deindexVertices(
+      twgl.primitives.createSphereVertices(10, 32, 32)
+    );
+    const numElements = attribs.position.length / attribs.position.numComponents;
+
+    const buffers = {};
+
+    // a_position
+    buffers.position = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
+
+    gl.enableVertexAttribArray(attributes.position);
+    gl.vertexAttribPointer(
+      attributes.position,
+      3, // size
+      gl.FLOAT, // type
+      false, // normalize
+      0, // stride
+      0, // offset
+    );
+
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array(attribs.position),
+      gl.STATIC_DRAW,
+    );
+
+    objects.ball = {
+      attribs, numElements,
+    };
+  }
 
   return {
     gl,
     program, attributes, uniforms,
-    buffers, modelBufferArrays,
+    objects,
     state: {
       fieldOfView: 45 * Math.PI / 180,
       translate: [150, 100, 0],
-      rotate: [degToRad(210), degToRad(30), degToRad(0)],
+      rotate: [degToRad(180), degToRad(0), degToRad(0)],
       scale: [1, 1, 1],
       cameraPosition: [250, 0, 400],
       cameraVelocity: [0, 0, 0],
@@ -104,7 +150,7 @@ function render(app) {
   const {
     gl,
     program, uniforms,
-    modelBufferArrays,
+    objects,
     state,
   } = app;
 
@@ -123,21 +169,43 @@ function render(app) {
     matrix4.perspective(state.fieldOfView, gl.canvas.width / gl.canvas.height, 0.1, 2000),
     matrix4.inverse(cameraMatrix),
   );
-  const worldMatrix = matrix4.multiply(
-    matrix4.translate(...state.translate),
-    matrix4.xRotate(state.rotate[0]),
-    matrix4.yRotate(state.rotate[1]),
-    matrix4.zRotate(state.rotate[2]),
-    matrix4.scale(...state.scale),
-  );
 
-  gl.uniformMatrix4fv(
-    uniforms.matrix,
-    false,
-    matrix4.multiply(viewMatrix, worldMatrix),
-  );
+  { // pModel
+    const worldMatrix = matrix4.multiply(
+      matrix4.translate(...state.translate),
+      matrix4.xRotate(state.rotate[0]),
+      matrix4.yRotate(state.rotate[1]),
+      matrix4.zRotate(state.rotate[2]),
+      matrix4.scale(...state.scale),
+    );
 
-  gl.drawArrays(gl.TRIANGLES, 0, modelBufferArrays.numElements);
+    gl.uniformMatrix4fv(
+      uniforms.matrix,
+      false,
+      matrix4.multiply(viewMatrix, worldMatrix),
+    );
+
+    gl.uniform3f(uniforms.color, 0, 0, 0);
+
+    gl.drawArrays(gl.TRIANGLES, 0, objects.pModel.numElements);
+  }
+
+  { // ball
+    const worldMatrix = matrix4.multiply(
+      matrix4.translate(300, -80, 0),
+      matrix4.scale(3, 3, 3),
+    );
+
+    gl.uniformMatrix4fv(
+      uniforms.matrix,
+      false,
+      matrix4.multiply(viewMatrix, worldMatrix),
+    );
+
+    gl.uniform3f(uniforms.color, 67/255, 123/255, 208/255);
+
+    gl.drawArrays(gl.TRIANGLES, 0, objects.ball.numElements);
+  }
 }
 
 function startLoop(app, now = 0) {
