@@ -32,6 +32,16 @@ async function setup() {
   const canvas = document.getElementById('canvas');
   const gl = canvas.getContext('webgl');
 
+  const oesVaoExt = gl.getExtension('OES_vertex_array_object');
+  if (oesVaoExt) {
+    gl.createVertexArray = (...args) => oesVaoExt.createVertexArrayOES(...args);
+    gl.deleteVertexArray = (...args) => oesVaoExt.deleteVertexArrayOES(...args);
+    gl.isVertexArray = (...args) => oesVaoExt.isVertexArrayOES(...args);
+    gl.bindVertexArray = (...args) => oesVaoExt.bindVertexArrayOES(...args);
+  } else {
+    throw new Error('Your browser does not support WebGL ext: OES_vertex_array_object')
+  }
+
   const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
   const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
   const program = createProgram(gl, vertexShader, fragmentShader);
@@ -49,6 +59,8 @@ async function setup() {
 
   { // pModel
     const { attribs, numElements } = createModelBufferArrays();
+    const vao = gl.createVertexArray();
+    gl.bindVertexArray(vao);
 
     const buffers = {};
 
@@ -94,6 +106,7 @@ async function setup() {
 
     objects.pModel = {
       attribs, numElements,
+      vao, buffers,
     };
   }
 
@@ -102,6 +115,8 @@ async function setup() {
       twgl.primitives.createSphereVertices(10, 32, 32)
     );
     const numElements = attribs.position.length / attribs.position.numComponents;
+    const vao = gl.createVertexArray();
+    gl.bindVertexArray(vao);
 
     const buffers = {};
 
@@ -127,6 +142,43 @@ async function setup() {
 
     objects.ball = {
       attribs, numElements,
+      vao, buffers,
+    };
+  }
+
+  { // ground
+    const attribs = twgl.primitives.deindexVertices(
+      twgl.primitives.createPlaneVertices(1, 1)
+    );
+    const numElements = attribs.position.length / attribs.position.numComponents;
+    const vao = gl.createVertexArray();
+    gl.bindVertexArray(vao);
+
+    const buffers = {};
+
+    // a_position
+    buffers.position = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
+
+    gl.enableVertexAttribArray(attributes.position);
+    gl.vertexAttribPointer(
+      attributes.position,
+      3, // size
+      gl.FLOAT, // type
+      false, // normalize
+      0, // stride
+      0, // offset
+    );
+
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array(attribs.position),
+      gl.STATIC_DRAW,
+    );
+
+    objects.ground = {
+      attribs, numElements,
+      vao, buffers,
     };
   }
 
@@ -171,6 +223,7 @@ function render(app) {
   );
 
   { // pModel
+    gl.bindVertexArray(objects.pModel.vao);
     const worldMatrix = matrix4.multiply(
       matrix4.translate(...state.translate),
       matrix4.xRotate(state.rotate[0]),
@@ -191,6 +244,8 @@ function render(app) {
   }
 
   { // ball
+    gl.bindVertexArray(objects.ball.vao);
+
     const worldMatrix = matrix4.multiply(
       matrix4.translate(300, -80, 0),
       matrix4.scale(3, 3, 3),
@@ -205,6 +260,25 @@ function render(app) {
     gl.uniform3f(uniforms.color, 67/255, 123/255, 208/255);
 
     gl.drawArrays(gl.TRIANGLES, 0, objects.ball.numElements);
+  }
+
+  { // ground
+    gl.bindVertexArray(objects.ground.vao);
+
+    const worldMatrix = matrix4.multiply(
+      matrix4.translate(250, -100, -50),
+      matrix4.scale(500, 1, 500),
+    );
+
+    gl.uniformMatrix4fv(
+      uniforms.matrix,
+      false,
+      matrix4.multiply(viewMatrix, worldMatrix),
+    );
+
+    gl.uniform3f(uniforms.color, 0.5, 0.5, 0.5);
+
+    gl.drawArrays(gl.TRIANGLES, 0, objects.ground.numElements);
   }
 }
 
