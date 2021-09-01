@@ -7,11 +7,13 @@ CH2: texture and 2D [WebGL 鐵人]
 
 ## Day 6: 在 WebGL 取用、顯示圖片 -- Textures
 
+大家好，大家都叫我西瓜，你現在看到的是 2021 iThome 鐵人賽『如何在網頁中繪製 3D 場景？從 WebGL 的基礎開始說起』系列文章的第 6 篇文章。本系列文章從 WebGL 基本運作機制以及使用的原理開始介紹，最後建構出繪製 3D、光影效果之網頁。如果在閱讀本文時覺得有什麼未知的東西被當成已知的，可能可以在[前面的文章中](https://ithelp.ithome.com.tw/users/20140099/ironman/3929)找到相關的內容
+
 有在玩遊戲的讀著們在討論一款 3D 遊戲的時候，可能有提到遊戲內的『3D 貼圖』，遊戲 3D 物件表面常常不會是純色或是漸層單調的樣子，而是有一張圖片貼在這個物件表面的感覺，所以才叫做『3D 貼圖』吧，而且也可以用在圖案重複的『材質』顯示上，因此在英文叫做 texture。雖然現在還完全沒有進入 3D 的部份，但是 3D 貼圖/texture 追根究底得有個方法在 WebGL 裡面取用、顯示圖片，本篇抽離 3D 的部份，來介紹在 WebGL 取用、顯示圖片的方式
 
 ### `02-texture-2d.html` / `02-texture-2d.js`
 
-本篇開始將使用新的 `.html` 作為開始，起始點完整程式碼可以在這邊找到：[TO BE FILLED: e420f15]()，筆者將 `createShader`, `createProgram` 移動到工具箱 [`lib/utils.js`]()，裡面有 `loadImage` 用來下載並回傳 [`Image`](https://developer.mozilla.org/en-US/docs/Web/API/HTMLImageElement/Image) 元素（注意，是 async function），並且 `position` 與 [Day 5]() 相同使用 pixel 座標定位，看起來像是這樣：
+本篇開始將使用新的 `.html` 作為開始，起始點完整程式碼可以在這邊找到：[github.com/pastleo/webgl-ironman/commit/75179fb](https://github.com/pastleo/webgl-ironman/commit/75179fb4c0accee221bdc230520039f82538077c)，筆者將 `createShader`, `createProgram` 移動到工具箱 [`lib/utils.js`](https://github.com/pastleo/webgl-ironman/commit/75179fb4c0accee221bdc230520039f82538077c#diff-5dfe38baf287dcf756a17c2dd63483781b53bf4b669e10efdd01e74bcd8e780a)，裡面有 `loadImage` 用來下載並回傳 [`Image`](https://developer.mozilla.org/en-US/docs/Web/API/HTMLImageElement/Image) 元素（注意，是 async function），並且 `position` 與 [Day 5](TBD) 相同使用 pixel 座標定位，看起來像是這樣：
 
 ![02-texture-2d-start](https://i.imgur.com/t7cPxet.png)
 
@@ -91,7 +93,7 @@ void main() {
 
 ### Varying `v_texcoord`
 
-與 [Day 5]() 類似，既然 fragment shader 需要 varying，因此得在 vertex shader 提供 varying，vertex shader 又需要從 attribute 取得 texture 各個頂點需要取用的座標，對 vertex shader 加上這幾行：
+與 [Day 5](TBD) 類似，既然 fragment shader 需要 varying，因此得在 vertex shader 提供 varying，vertex shader 又需要從 attribute 取得 texture 各個頂點需要取用的座標，對 vertex shader 加上這幾行：
 
 ```diff=
  attribute vec2 a_position;
@@ -174,7 +176,7 @@ gl.uniform1i(textureUniformLocation, textureUnit);
 * `textureUnit` 為通道的編號，設定為 `0` 使用第一個通道
 * `gl.bindTexture` 把目標指向建立好的 `texture`，如果有其他 texture 導致目標更換時，這邊要把目標設定正確，雖然本篇只有一個 texture 就是了
 * `gl.activeTexture()` 啟用通道並把目標 texture 設定到通道上，這邊還有神奇的 `gl.TEXTURE0 + textureUnit` 寫法；讀者可以嘗試在 Console 輸入 `gl.TEXTURE1 - gl.TEXTURE0` (`1`)，或是 `gl.TEXTURE5 - gl.TEXTURE2` (`3`)，就可以知道為什麼可以用 `+` 共用 `textureUnit` 指定通道了
-* 在 [Day 4]() 介紹 uniform 提到對於每種資料型別都有一個傳入 function，`gl.uniform1i` 傳的是 1 個整數，把通道的編號傳入，在 fragment shader 中就會直接被反應成 `sampler2D`
+* 在 [Day 4](TBD) 介紹 uniform 提到對於每種資料型別都有一個傳入 function，`gl.uniform1i` 傳的是 1 個整數，把通道的編號傳入，在 fragment shader 中就會直接被反應成 `sampler2D`
 
 一切順利的話，就可以看到圖片出現在 canvas 裡頭，fragment shader 成功地『在每個 pixel 運算時從 texture 圖片上的某個位置取出其顏色來輸出』：
 
@@ -184,9 +186,16 @@ gl.uniform1i(textureUniformLocation, textureUnit);
 
 ![texture-0.8](https://i.imgur.com/owsZn0X.png)
 
-本篇的完整程式碼可以在這邊找到：[TO BE FILLED: fe6955b]()，但是關於 texture 其實還有許多細節，待下篇再來繼續討論
+本篇的完整程式碼可以在這邊找到：
+
+* [github.com/pastleo/webgl-ironman/commit/f976e7c](https://github.com/pastleo/webgl-ironman/commit/f976e7cacdaa7b64196f0db252ba231fc6348af2)
+* [live 版本](https://static.pastleo.me/webgl-ironman/commits/f976e7cacdaa7b64196f0db252ba231fc6348af2/02-texture-2d.html)
+
+但是關於 texture 其實還有許多細節，待下篇再來繼續討論
 
 ## Day 7: more about Textures
+
+大家好，大家都叫我西瓜，你現在看到的是 2021 iThome 鐵人賽『如何在網頁中繪製 3D 場景？從 WebGL 的基礎開始說起』系列文章的第 7 篇文章。本系列文章從 WebGL 基本運作機制以及使用的原理開始介紹，最後建構出繪製 3D、光影效果之網頁。講完 WebGL 基本機制後，本章節講述的是 texture，如果在閱讀本文時覺得有什麼未知的東西被當成已知的，可能可以在[前面的文章中](https://ithelp.ithome.com.tw/users/20140099/ironman/3929)找到相關的內容
 
 ### 換張圖試試看？
 
@@ -367,17 +376,25 @@ gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
 
 ![block-pattern](https://i.imgur.com/wyhnyAw.png)
 
-本篇的完整程式碼：
+本篇各個階段的完整程式碼：
 
-* 顯示貓圖：[TO BE FILLED: b7f20cd]()
-* `gl.LINEAR_MIPMAP_LINEAR`: [TO BE FILLED: d48342b]()
-* 賽車格紋：[TO BE FILLED: 88437c9]()
+* 顯示貓圖：
+  * [github.com/pastleo/webgl-ironman/commit/f68190e](https://github.com/pastleo/webgl-ironman/commit/f68190e4159fca256bd5018239c98e4f5070b899)
+  * [live 版本](https://static.pastleo.me/webgl-ironman/commits/f68190e4159fca256bd5018239c98e4f5070b899/02-texture-2d.html)
+* `gl.LINEAR_MIPMAP_LINEAR`:
+  * [github.com/pastleo/webgl-ironman/commit/ec67acc](https://github.com/pastleo/webgl-ironman/commit/ec67acc8d846df7fce7f3e520842ba93012ddf02)
+  * [live 版本](https://static.pastleo.me/webgl-ironman/commits/ec67acc8d846df7fce7f3e520842ba93012ddf02/02-texture-2d.html)
+* 賽車格紋：
+  * [github.com/pastleo/webgl-ironman/commit/8bb9132](https://github.com/pastleo/webgl-ironman/commit/8bb91323e302bfe20e93e3a24cc06371dc5087ac)
+  * [live 版本](https://static.pastleo.me/webgl-ironman/commits/8bb91323e302bfe20e93e3a24cc06371dc5087ac/02-texture-2d.html)
 
 介紹 texture 功能至此，之後甚至可以讓 GPU 渲染到 texture 上，有相關需求時再接續討論。到目前為止我們使用 WebGL 網頁讀取完畢只會繪製一次，待下篇來加入控制項接收事件重新渲染畫面，並製作成動畫
 
 ---
 
 ## Day 8: 互動 & 動畫
+
+大家好，大家都叫我西瓜，你現在看到的是 2021 iThome 鐵人賽『如何在網頁中繪製 3D 場景？從 WebGL 的基礎開始說起』系列文章的第 8 篇文章。本系列文章從 WebGL 基本運作機制以及使用的原理開始介紹，最後建構出繪製 3D、光影效果之網頁。講完 WebGL 基本機制後，本章節講述的是 texture 以及 2D transform，如果在閱讀本文時覺得有什麼未知的東西被當成已知的，可能可以在[前面的文章中](https://ithelp.ithome.com.tw/users/20140099/ironman/3929)找到相關的內容
 
 有用到 WebGL 繪製的網頁通常都是『會動』的，有許多會根據使用者操作反應在畫面上，或者是根據時間產生變化的動畫，本篇將基於先前用 texture 渲染的畫面，加入簡易的 WebGL 互動、動畫功能
 
@@ -462,7 +479,7 @@ function render(app) {
 }
 ```
 
-可以注意到這邊除了設定 uniform 以及最後的 `gl.drawArrays()` 之外，還包含了調整 canvas 大小、繪製區域的程式，這樣就可以在重畫的時候解決 [Day 4]() 讀取網頁後調整視窗大小時造成的拉伸問題。最後 `main()` 就是負責把 `setup()` 以及 `render()` 串起來：
+可以注意到這邊除了設定 uniform 以及最後的 `gl.drawArrays()` 之外，還包含了調整 canvas 大小、繪製區域的程式，這樣就可以在重畫的時候解決 [Day 4](TBD) 讀取網頁後調整視窗大小時造成的拉伸問題。最後 `main()` 就是負責把 `setup()` 以及 `render()` 串起來：
 
 ```javascript=
 async function main() {
@@ -475,6 +492,8 @@ async function main() {
 
 main();
 ```
+
+調整完後的完整程式碼：[github.com/pastleo/webgl-ironman/commit/21efcd5](https://github.com/pastleo/webgl-ironman/commit/21efcd5db5975e448de744f8c1cda1c9c089e999)
 
 ### 互動：選擇 texture 圖片
 
@@ -762,15 +781,20 @@ function startLoop(app, now = 0) {
  main();
 ```
 
-筆者同時也加上了速度控制，看起來像是這樣：[live 版本 (TBD)]()
+筆者同時也加上了速度控制，看起來像是這樣：[live 版本](https://static.pastleo.me/webgl-ironman/commits/fb43e07d9dbe66ba9aae1f966a7d809a9ed1fa8f/02-texture-2d.html)
 
 ![cat-2](https://i.imgur.com/taDEMnd.png)
 
-完整程式碼可以在這邊找到：[TO BE FILLED: 542832d]()，本篇使用 `offset` 平移圖片，但在 2D, 3D 渲染的世界中，尤其是 3D，常常利用線性代數方式控制物件的位置，不僅可以平移，更可以縮放、旋轉，並且可以只透過一組矩陣來完成，待下篇來繼續討論
+完整程式碼可以在下方找到，本篇使用 `offset` 平移圖片，但在 2D, 3D 渲染的世界中，尤其是 3D，常常利用線性代數方式控制物件的位置，不僅可以平移，更可以縮放、旋轉，並且可以只透過一組矩陣來完成，待下篇來繼續討論
+
+* 控制顯示的圖片：[github.com/pastleo/webgl-ironman/commit/97f8650](https://github.com/pastleo/webgl-ironman/commit/97f8650566a5af01085776073fbdf343c5f1d1f0)
+* 動畫效果：[github.com/pastleo/webgl-ironman/commit/fb43e07](https://github.com/pastleo/webgl-ironman/commit/fb43e07d9dbe66ba9aae1f966a7d809a9ed1fa8f)
 
 ---
 
 ## Day 9: 2D Transform
+
+大家好，大家都叫我西瓜，你現在看到的是 2021 iThome 鐵人賽『如何在網頁中繪製 3D 場景？從 WebGL 的基礎開始說起』系列文章的第 9 篇文章。本系列文章從 WebGL 基本運作機制以及使用的原理開始介紹，最後建構出繪製 3D、光影效果之網頁。講完 WebGL 基本機制後，本章節講述的是 texture 以及 2D transform，如果在閱讀本文時覺得有什麼未知的東西被當成已知的，可能可以在[前面的文章中](https://ithelp.ithome.com.tw/users/20140099/ironman/3929)找到相關的內容
 
 在上篇加入了 `u_offset` 來控制物件的平移，如果我們現在想要進行縮放、旋轉，那麼就得在傳入更多 uniform，而且這些動作會有誰先作用的差別，比方說，先往右旋轉 90 度、接著往右平移 30px，與先往右平移 30px、再往右旋轉 90 度，這兩著會獲得不一樣的結果，如果只是傳平移量、縮放量、旋轉度數，在 vertex shader 內得有一個寫死的的先後作用順序，那麼在應用層面上就會受到這個先後順序的限制，因此在 vertex 運算座標的時候，通常會運用線性代數，傳入一個矩陣，這個矩陣就能包含任意先後順序的平移、縮放、旋轉動作
 
@@ -832,7 +856,7 @@ multiply(m, v) => [23, 34]
  `;
 ```
 
-可以注意到 `u_matrix` 的型別為 `mat3` ，也就是 3x3 矩陣，我們還在 2D，為何要用 `mat3` 呢？因為 2x2 矩陣是無法包含『平移 (translate)』的，要做到平移，必須在運算時增加一個維度，並填上 `1`，使得向量為 `[x, y, 1]`，接著平移矩陣就是[單位矩陣](https://zh.wikipedia.org/wiki/%E5%96%AE%E4%BD%8D%E7%9F%A9%E9%99%A3)在多餘的維度中放上要平移的量，舉個例子，向量為 `[4, 5]`，要平移 `[2, 3]`:
+`u_matrix` 的資料型別為 `mat3`，為 3x3 矩陣，而且在 GLSL 中 `*` 運算子可以接受 `mat3` 與 `vec3` 相乘，`u_matrix * vec3(a_position.xy, 1)` 就可以得到『使用矩陣轉換向量』後的結果，可是說是把矩陣運算直接內建在語法中了；同時也可以注意到 `u_matrix` 為 3x3 矩陣，我們還在 2D，為何要用 `mat3` 呢？因為 2x2 矩陣是無法包含『平移 (translate)』的，要做到平移，必須在運算時增加一個維度，並填上 `1`，使得向量為 `[x, y, 1]`，接著平移矩陣就是[單位矩陣](https://zh.wikipedia.org/wiki/%E5%96%AE%E4%BD%8D%E7%9F%A9%E9%99%A3)在多餘的維度中放上要平移的量，舉個例子，向量為 `[4, 5]`，要平移 `[2, 3]`:
 
 ```
 multiply(
@@ -937,19 +961,31 @@ gl.uniformMatrix3fv(
 );
 ```
 
-筆者把投影產生的矩陣命名為 `viewMatrix`，因為這個矩陣表示了可視區域，不論繪製多少物件都會是一樣的；另外一個矩陣稱為 `worldMatrix`，表示該物件在場景中位置的 transform。最後把 `viewMatrix` 與 `worldMatrix` 相乘，得到包含所有 transform 的矩陣，並使用 [`gl.uniformMatrix3fv()`](https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/uniformMatrix) 設定到 uniform 上，其第二個參數表示要不要做[轉置 transpose](https://zh.wikipedia.org/wiki/%E8%BD%AC%E7%BD%AE%E7%9F%A9%E9%98%B5)，我們沒有需要因此傳入 `false`
+筆者先製作名叫 `viewMatrix` 的矩陣，包含 `matrix3.projection()` 負責投影到 clip space；以及另一個矩陣稱為 `worldMatrix`，表示該物件在場景中位置的 transform。最後把 `viewMatrix` 與 `worldMatrix` 相乘，得到包含所有 transform 的矩陣，並使用 [`gl.uniformMatrix3fv()`](https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/uniformMatrix) 設定到 uniform 上，其第二個參數表示要不要做[轉置 transpose](https://zh.wikipedia.org/wiki/%E8%BD%AC%E7%BD%AE%E7%9F%A9%E9%98%B5)，我們沒有需要因此傳入 `false`
 
-存檔重整，使用 matrix 做 transform 的版本看起來跟先前 offset 的版本一模一樣：[live 版本 (TBD)]()
+存檔重整，使用 matrix 做 transform 的版本看起來跟先前 offset 的版本一模一樣：[live 版本](https://static.pastleo.me/webgl-ironman/commits/20f165c9ff7c8706687b7d13b3f8174114b5c322/02-texture-2d.html)
 
 ![2d-transform-penguin](https://i.imgur.com/cLedkx1.png)
 
-完整程式碼可以在這邊找到：[TO BE FILLED: bc91eb8]()
+總結一下 transform，首先 `u_matrix` 為 `viewMatrix` 與 `worldMatrix` 相乘`viewMatrix` 為 `matrix3.projection()`、`worldMatrix` 為 `matrix3.translate(offset)`，最後在 vertex shader 內 `u_matrix * a_position`，來展開一路從 `a_position` 到 `gl_Position` / clip space 的運算式（忽略維度的調整）：
 
-雖然看似沒有什麼新功能，但是這樣 transform 的作法更適合之後 3D 場景中複雜的物件位置到螢幕上位置的運算，待下篇再繼續延伸更多 2D transform
+```
+gl_Position = u_matrix * a_position;
+=> gl_Position = viewMatrix * worldMatrix * a_position;
+=> gl_Position = matrix3.projection() * matrix3.translate(offset) * a_position;
+```
+
+而 linear transform 在電腦中與數學上都是由右到左計算的，因此最後整個計算下來的效果就是：**先對 `a_position` 平移 offset 量 (translate)，接著投影螢幕範圍到 clip space (projection)**
+
+完整程式碼可以在這邊找到：[github.com/pastleo/webgl-ironman/commit/20f165c](https://github.com/pastleo/webgl-ironman/commit/20f165c9ff7c8706687b7d13b3f8174114b5c322)
+
+雖然看似沒有什麼新功能，且只有兩個 transform，但是建構出來的流程讓我們可以很容易地加入更多 transform，也更適合之後 3D 場景中複雜的物件位置到螢幕上位置的運算，待下篇再繼續加入更多 2D transform
 
 ---
 
 ## Day 10: 2D transform Continued
+
+大家好，大家都叫我西瓜，你現在看到的是 2021 iThome 鐵人賽『如何在網頁中繪製 3D 場景？從 WebGL 的基礎開始說起』系列文章的第 10 篇文章。本系列文章從 WebGL 基本運作機制以及使用的原理開始介紹，最後建構出繪製 3D、光影效果之網頁。講完 WebGL 基本機制後，本章節講述的是 texture 以及 2D transform，如果在閱讀本文時覺得有什麼未知的東西被當成已知的，可能可以在[前面的文章中](https://ithelp.ithome.com.tw/users/20140099/ironman/3929)找到相關的內容
 
 上篇把原本透過 `u_offset`、`u_resolution` 來控制平移以及 clip space 投影換成只用一個矩陣來做轉換，我們實做了矩陣的相乘 (multiply)、平移 (translate) 以及縮放 (scale)，在常見的 transform 中還剩下旋轉 (rotation) 尚未實做，除此之外 `lib/matrix.js` 也缺乏一些常用的小工具，本篇將加上平移、縮放、旋轉之控制項，同時把這些矩陣工具補完
 
@@ -1237,7 +1273,9 @@ const worldMatrix = matrix3.multiply(
 
 不論 `matrix3.identity()` 放在哪個位置，都不會改變結果；上述用途只是其中一個舉例，之後可能會因為兩個物件共用同一個 shader，但是其中一個物件不需要特定轉換，那麼也會傳入單位矩陣來『什麼都不做』
 
-本篇進度的 live 版本：[TO BE FILLED: 7b935eb]()
-完整程式碼：[TO BE FILLED: 7b935eb]()
+本篇的完整程式碼可以在這邊找到：
+
+* [github.com/pastleo/webgl-ironman/commit/132c4f6](https://github.com/pastleo/webgl-ironman/commit/132c4f6c256a4677f618391f5ddb4a1ab490e356)
+* [live 版本](https://static.pastleo.me/webgl-ironman/commits/132c4f6c256a4677f618391f5ddb4a1ab490e356/02-texture-2d.html)
 
 Texture & 2D Transform 就到這邊，筆者學習到此的時候深刻感受到線性代數的威力，輸入的矩陣與理論結合扎實地反應在螢幕上，並為接下來 3D transform 打好基礎，下個章節將進入 3D，開始嘗試渲染現實世界所看到的樣子

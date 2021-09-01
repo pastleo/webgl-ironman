@@ -7,19 +7,23 @@ CH1: hello WebGL [WebGL 鐵人]
 
 ## Day 1: Hello WebGL
 
-大家好，大家都叫我西瓜。因為想轉職寫遊戲，而遊戲中會讓人第一個想到、也是能在第一瞬間吸引人的就是畫面了，筆者從事網站開發多年，也很順勢的從 WebGL 開始學習，這系列文章將以做出範例的方式，跟大家分享這幾個月學習的心得
+> 已發布於 https://ithelp.ithome.com.tw/articles/10258943
+
+大家好，大家都叫我西瓜。因為想轉職寫遊戲，而遊戲中會讓人第一個想到、也是能在第一瞬間吸引人的就是畫面了，筆者從事網站開發多年，也就順勢從 WebGL 開始學習，這系列文章將以做出範例的方式，跟大家分享這幾個月學習的心得
 
 這系列文章假設讀者能夠看懂 Javascript，並且對於 Web 技術有基礎的了解
 
 ### WebGL 是啥？為何是 WebGL？
 
-簡單來說，[WebGL](https://zh.wikipedia.org/wiki/WebGL) 是一組在 Web 上操作 GPU 的 Javascript API，而 WebGL 絕大部分的 API 都可以找到 [openGL](https://zh.wikipedia.org/wiki/OpenGL) 上對應的版本，且名字幾乎沒有差別，openGL 通常，猜測制定 WebGL 標準時只打算做一層薄薄的包裝，這樣一方面瀏覽器可能比較好實做，但是也因此 WebGL 直接使用時是非常底層的，甚至偶爾會需要去算線性代數、矩陣的東西
+簡單來說，[WebGL](https://zh.wikipedia.org/wiki/WebGL) 是一組在 Web 上操作 GPU 的 Javascript API，而 WebGL 絕大部分的 API 都可以找到 [openGL](https://zh.wikipedia.org/wiki/OpenGL) 上對應的版本，且名字幾乎沒有差別，猜測制定 WebGL 標準時只打算做一層薄薄的包裝，這樣一方面瀏覽器可能比較好實做，但是也因此 WebGL 直接使用時是非常底層的，甚至偶爾會需要去算線性代數、矩陣的東西
 
 看到這邊讀者們可能會想說：哇，我要來把 Tab 關掉了，洗洗睡。老實說，如果對於基礎原理沒有興趣，想要『快速』做出東西，這邊確實可以左轉 [three.js](https://threejs.org/) 或是 [babylon.js](https://www.babylonjs.com/)，筆者是基於下面這個因素決定學習 WebGL 的：
 
 > 當你了解其原理時，比較不容易受到框架、潮流演進的影響
 
-為什麼？在了解原理的狀況下，比較能知道框架幫你做了什麼，遇到什麼框架不好做、或是做起來效能不好的時候可能比較容易想到方法應對；前端技術更迭速度大家都知道，但是基礎原理是不會有太大的變化的；最後，透過 WebGL 學到的原理多多少少也能應用在其他平台上吧
+為什麼？在了解原理的狀況下，比較能知道框架幫你做了什麼，遇到變化比較大的需求的時候可能比較容易想到方法應對；前端技術更迭速度大家都知道，但是基礎原理是不會有太大的變化的；最後，透過 WebGL 學到的原理多多少少也能應用在其他平台上吧
+
+> 筆者近期學習 WebGL 所使用的資源主要是 [WebGL2 Fundamentals](https://webgl2fundamentals.org/)，這個網站上的教學寫的非常完整，從基礎一路到各個功能的實做，因此本次鐵人賽系列文章所提及的概念或多或少會與這個網站重疊，有興趣的讀者不妨交互參考看看；同時，如果有大大發現文章內容有誤，歡迎使用[我的網站這邊的聯絡方式](https://pastleo.me/about)聯絡我改正，感謝！
 
 ### 準備開發環境
 
@@ -80,7 +84,7 @@ window.gl = gl;
 
 老實說，我們距離繪製一些有意義的東西還有點遙遠，不過倒是可以先找個顏色填滿（事實上是清除）畫面讓第一天有點東西
 
-首先要透過 `gl.clearColor(red, green, blue, alpha)` 設定清除用的顏色，這邊 red, green, blue, alpha 是介於 0 - 1 之間的浮點數，設定好之後，`gl.clear(gl.COLOR_BUFFER_BIT)` 進行清除，而 `gl.COLOR_BUFFER_BIT` 是用來指定清除顏色的部份，以筆者的主題色 `#6bde99` / `rgb(107 222 153)` 為例，大概像是這樣：
+首先要透過 `gl.clearColor(red, green, blue, alpha)` 設定清除用的顏色，這邊 red, green, blue, alpha 是介於 0 - 1 之間的浮點數，設定好之後，`gl.clear(gl.COLOR_BUFFER_BIT)` 進行清除，而 `gl.COLOR_BUFFER_BIT` 是用來指定清除顏色的部份，以筆者的主題色 `#6bde99` / `rgb(108 225 153)` 為例，大概像是這樣：
 
 ```javascript=
 gl.clearColor(108/255, 225/255, 153/255, 1);
@@ -93,11 +97,18 @@ gl.clear(gl.COLOR_BUFFER_BIT);
 
 光是從 `gl.clearColor` / `gl.clear` 這兩個就可以感受到 WebGL 是來自另外一個世界的 API，在 GPU 這邊許多東西都是介於 0 到 1 之間的浮點數，而 `gl.COLOR_BUFFER_BIT` 更是體現跟底層溝通用的 bit flag
 
-本篇的完整程式碼可以在這邊找到：[TO BE FILLED: fa8d0f6]()，明天開始來繪製 GL 最常見的基本元素：三角形，並介紹繪製的基本流程
+本篇的完整程式碼可以在這邊找到：
+
+* [github.com/pastleo/webgl-ironman/commit/2183cb2](https://github.com/pastleo/webgl-ironman/commit/2183cb2fafb21ea2143a35577aeeb4e22653c219)
+* [live 版本](https://static.pastleo.me/webgl-ironman/commits/2183cb2fafb21ea2143a35577aeeb4e22653c219/01-hello-webgl.html)
+
+明天開始來繪製 GL 最常見的基本元素：三角形，並介紹繪製的基本流程
 
 ---
 
 ## Day 2: 畫一個三角形（上）
+
+大家好，大家都叫我西瓜，你現在看到的是 2021 iThome 鐵人賽『如何在網頁中繪製 3D 場景？從 WebGL 的基礎開始說起』系列文章的第 2 篇文章。本系列文章從 WebGL 之基礎開始介紹，最後建構出繪製 3D、光影效果之網頁。本章節講述的是 WebGL 基本的運作機制以及如何使用其提供的功能
 
 在讓電腦繪製一個三維場景時，我們實際在做的事情把這三維場景中物體的『表面』畫在畫面上，而構成一個面最少需要三個點，三個點構成一個三角形，而所有更複雜的形狀或是表面都可以用複數個三角形做出來，因此使用 3D 繪製相關的工具時基本的單位往往是三角形，我們就來使用 WebGL 畫一個三角形吧！
 
@@ -216,13 +227,20 @@ const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource
 const program = createProgram(gl, vertexShader, fragmentShader);
 ```
 
-這樣一來 `program` 就建立完成，本篇的完整程式碼可以在這邊找到：[TO BE FILLED: 97dc748]()，下一篇我們再繼續『畫什麼』的資料部份
+這樣一來 `program` 就建立完成，下一篇我們再繼續『畫什麼』的資料部份
+
+本篇的完整程式碼可以在這邊找到：
+
+* [github.com/pastleo/webgl-ironman/commit/eb01fbe](https://github.com/pastleo/webgl-ironman/commit/eb01fbe67e689b8b8222a9b870b0dc84635f5dfa)
+* [live 版本](https://static.pastleo.me/webgl-ironman/commits/eb01fbe67e689b8b8222a9b870b0dc84635f5dfa/01-hello-webgl.html)
 
 ---
 
 ## Day 3: 畫一個三角形（下）
 
-在上一篇 WebGL 的繪製流程，同時也建立了 shader 並鍊結成 program，如果有需要可以回到上一篇複習：[Day 2: 畫一個三角形（上）]()，而接下來要告訴 GPU 『畫什麼』，精確來說，就是提供上一篇 vertex shader 中 `a_position` 所需的資料
+大家好，大家都叫我西瓜，你現在看到的是 2021 iThome 鐵人賽『如何在網頁中繪製 3D 場景？從 WebGL 的基礎開始說起』系列文章的第 3 篇文章。本系列文章從 WebGL 之基礎開始介紹，最後建構出繪製 3D、光影效果之網頁。本章節講述的是 WebGL 基本的運作機制以及如何使用其提供的功能
+
+在上一篇 WebGL 的繪製流程，同時也建立了 shader 並鍊結成 program，如果有需要可以回到上一篇複習：[Day 2: 畫一個三角形（上）](TBD)，而接下來要告訴 GPU 『畫什麼』，精確來說，就是提供上一篇 vertex shader 中 `a_position` 所需的資料
 
 ### 取得 Attribute 位置
 
@@ -331,13 +349,18 @@ gl.drawArrays(gl.TRIANGLES, 0, 3);
 
 > 到最後一刻才呼叫 `gl.useProgram()`，整個資料設定的過程還是透過 attribute 的『位置』設定的，這表示資料在一定程度上可以與 shader 脫鉤，打個比方，同一個 3D 物件可以根據情況使用不同的 shader 來渲染達成不同的效果，但是在記憶體中這個 3D 物件只需要一份就好
 
-三角形的顏色是寫死在 fragment shader 內，讀者們可以試著調顏色、頂點位置玩玩看，本篇的完整程式碼可以在這邊找到：[TO BE FILLED: 2fee106]()
+三角形的顏色是寫死在 fragment shader 內，讀者們可以試著調顏色、頂點位置玩玩看，本篇的完整程式碼可以在這邊找到：
+
+* [github.com/pastleo/webgl-ironman/commit/83480b4](https://github.com/pastleo/webgl-ironman/commit/83480b49e70545a138d6150d72a8346e43f52d97)
+* [live 版本](https://static.pastleo.me/webgl-ironman/commits/83480b49e70545a138d6150d72a8346e43f52d97/01-hello-webgl.html)
 
 花了這麼多力氣，就只是一個純色的三角形，而且定位還得先用畫布的 `-1 ~ 1` 來算，接下來繼續介紹更多 shader 接收資料、參數的方式來使繪製更加靈活
 
 ---
 
 ## Day 4: Uniform -- shader 之參數
+
+大家好，大家都叫我西瓜，你現在看到的是 2021 iThome 鐵人賽『如何在網頁中繪製 3D 場景？從 WebGL 的基礎開始說起』系列文章的第 4 篇文章。本系列文章從 WebGL 之基礎開始介紹，最後建構出繪製 3D、光影效果之網頁。本章節講述的是 WebGL 基本的運作機制以及如何使用其提供的功能，如果在閱讀本文時覺得有什麼未知的東西被當成已知的，可能可以在[前面的文章中](https://ithelp.ithome.com.tw/users/20140099/ironman/3929)找到相關的內容
 
 ### 使用『畫布中的 x/y pixel 位置』定位
 
@@ -462,13 +485,18 @@ gl.viewport(0, 0, canvas.width, canvas.height);
 
 > 若在網頁載入渲染完成後調整視窗大小，一樣會發生拉伸的狀況，這時 `canvas.width`, `canvas.height` 跟 WebGL 繪製區域都得再進行調整並重新繪製
 
-終於正確了，三角形的頂點位置符合 `a_position` 傳入的 pixel 座標值，本篇的完整程式碼可以在這邊找到：[TO BE FILLED: e3520b8]()
+終於正確了，三角形的頂點位置符合 `a_position` 傳入的 pixel 座標值，本篇的完整程式碼可以在這邊找到：
+
+* [github.com/pastleo/webgl-ironman/commit/2ce2d16](https://github.com/pastleo/webgl-ironman/commit/2ce2d16e5b84aa62114496c323fe200bd5303393)
+* [live 版本](https://static.pastleo.me/webgl-ironman/commits/2ce2d16e5b84aa62114496c323fe200bd5303393/01-hello-webgl.html)
 
 畫面上只有一個三角形顯然有點孤單，待下篇來畫多個、顏色不同的三角形
 
 ---
 
 ## Day 5: Varying -- fragment shader 之資料
+
+大家好，大家都叫我西瓜，你現在看到的是 2021 iThome 鐵人賽『如何在網頁中繪製 3D 場景？從 WebGL 的基礎開始說起』系列文章的第 5 篇文章。本系列文章從 WebGL 之基礎開始介紹，最後建構出繪製 3D、光影效果之網頁。本章節講述的是 WebGL 基本的運作機制以及如何使用其提供的功能，如果在閱讀本文時覺得有什麼未知的東西被當成已知的，可能可以在[前面的文章中](https://ithelp.ithome.com.tw/users/20140099/ironman/3929)找到相關的內容
 
 ### 畫多個三角形
 
@@ -514,13 +542,13 @@ gl.drawArrays(gl.TRIANGLES, 0, 9);
 
 ### 顏色不同的三角形
 
-在 [Day 2]() 我們實做的 fragment shader 只是純粹把顏色指定上去，所以現在不論畫幾個三角形，顏色都是當初寫死在 fragment shader 中的顏色：
+在 [Day 2](TBD) 我們實做的 fragment shader 只是純粹把顏色指定上去，所以現在不論畫幾個三角形，顏色都是當初寫死在 fragment shader 中的顏色：
 
 ```c=
 gl_FragColor = vec4(0.4745, 0.3333, 0.2823, 1);
 ```
 
-要讓不同三角形有不同的顏色，要思考的是輸入資料/參數給 fragment shader 的方式，在 fragment shader 中可以使用 uniform，但是那樣的話所有三角形的顏色依然會是一樣，得用類似 attribute / buffer 『每次 shader 呼叫不同』的東西，不過 fragment shader 中是不能使用 attribute 的功能的，回想 [Day 2]() fragment shader 的運作方式：fragment shader 是每個 pixel 執行一次，不像是 vertex shader 以頂點為單位，取用 array buffer 的方式顯然對不起來，因此需要另外一種傳輸工具 -- varying
+要讓不同三角形有不同的顏色，要思考的是輸入資料/參數給 fragment shader 的方式，在 fragment shader 中可以使用 uniform，但是那樣的話所有三角形的顏色依然會是一樣，得用類似 attribute / buffer 『每次 shader 呼叫不同』的東西，不過 fragment shader 中是不能使用 attribute 的功能的，回想 [Day 2](TBD) fragment shader 的運作方式：fragment shader 是每個 pixel 執行一次，不像是 vertex shader 以頂點為單位，取用 array buffer 的方式顯然對不起來，因此需要另外一種傳輸工具 -- varying
 
 ### Varying
 
@@ -572,7 +600,7 @@ void main() {
  }
 ```
 
-可以看到筆者加了一個 `attribute vec3 a_color`，並且直接把 `v_color` 指定成 `a_color` 的值，接下來就是重複 [Day 3]() 『畫什麼』的資料輸入、vertex attribute array 等設定：
+可以看到筆者加了一個 `attribute vec3 a_color`，並且直接把 `v_color` 指定成 `a_color` 的值，接下來就是重複 [Day 3](TBD) 『畫什麼』的資料輸入、vertex attribute array 等設定：
 
 
 ```javascript=
@@ -614,11 +642,11 @@ gl.bufferData(
 );
 ```
 
-這段程式碼原理在 [Day 3]() 都有提過，比較需要注意幾點：
+這段程式碼原理在 [Day 3](TBD) 都有提過，比較需要注意幾點：
 
 1. `gl.vertexAttribPointer()` 以及 `gl.bufferData()` 該行執行的當下要注意 bind 的 `ARRAY_BUFFER` 是哪個，要不然會對著錯誤的目標做事，當然最好的就是把對於一個 attribute 的操作清楚分好，日後也比較好看出該區域在操作的對象
 2. `gl.vertexAttribPointer()` 的 `size: 3`，因為顏色有 3 個 channel: RGB，因此對於每個頂點 `gl.bufferData()` 要給 3 個值
-3. 筆者在 `gl.vertexAttribPointer()` 使用 `gl.UNSIGNED_BYTE` 配合 `normalize: true` 來使用，在 [Day 3]() 有提到： normalize 配合整數型別時可以把資料除以該型別的最大值使 attribute 變成介於 <= 1 的浮點數，那麼在 `gl.bufferData()` 時傳入 `Uint8Array`，並且可以在資料內容寫熟悉的 rgb 值
+3. 筆者在 `gl.vertexAttribPointer()` 使用 `gl.UNSIGNED_BYTE` 配合 `normalize: true` 來使用，在 [Day 3](TBD) 有提到： normalize 配合整數型別時可以把資料除以該型別的最大值使 attribute 變成介於 <= 1 的浮點數，那麼在 `gl.bufferData()` 時傳入 `Uint8Array`，並且可以在資料內容寫熟悉的 rgb 值
 
 總結來說資料流如下：
 
@@ -631,6 +659,11 @@ gl.bufferData(
 
 ![multiple-different-color-triangles](https://i.imgur.com/YVaY90B.png)
 
-本篇的完整程式碼可以在這邊找到：[TO BE FILLED: 9464b76]()，筆者認為 WebGL API 最基本的 building block 其實就是 Day 1 到 Day 5 的內容，接下來除了 texture, skybox 之外，幾乎可以說是用這些 building block（搭配線性代數）建構出 3D、光影等效果。下一章就來介紹 texture 並讓 shader 真的開始做一些運算
+本篇的完整程式碼可以在這邊找到：
+
+* [github.com/pastleo/webgl-ironman/commit/9d86080](https://github.com/pastleo/webgl-ironman/commit/9d86080123c4cd53a2de6904f0aa70033433f1e1)
+* [live 版本](https://static.pastleo.me/webgl-ironman/commits/9d86080123c4cd53a2de6904f0aa70033433f1e1/01-hello-webgl.html)
+
+筆者認為 WebGL API 最基本的 building block 其實就是 Day 1 到 Day 5 的內容，接下來除了 texture, skybox 之外，幾乎可以說是用這些 building block（搭配線性代數）建構出 3D、光影等效果。下一章就來介紹 texture 並讓 shader 真的開始做一些運算
 
 > 如果讀者好奇去修改傳入 `gl.bufferData()` 的資料玩玩的話，應該很快就會發現要自己去對 `a_position` 的第幾組資料跟 `a_color` 的第幾組資料是屬於同一個頂點的，他們在程式碼上有點距離，沒有那種 `{position: [1,2], color: '#abcdef'}` 清楚的感覺，真的要做些應用程式，很快就得自己對這部份做點抽象開始包裝，要不然程式碼一轉眼就會讓人難以摸著頭緒
