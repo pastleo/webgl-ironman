@@ -108,7 +108,9 @@ gl.clear(gl.COLOR_BUFFER_BIT);
 
 ## Day 2: 畫一個三角形（上）
 
-大家好，大家都叫我西瓜，你現在看到的是 2021 iThome 鐵人賽『如何在網頁中繪製 3D 場景？從 WebGL 的基礎開始說起』系列文章的第 2 篇文章。本系列文章從 WebGL 之基礎開始介紹，最後建構出繪製 3D、光影效果之網頁。本章節講述的是 WebGL 基本的運作機制以及如何使用其提供的功能
+> 已發布於 https://ithelp.ithome.com.tw/articles/10258991
+
+大家好，我是西瓜，你現在看到的是 2021 iThome 鐵人賽『如何在網頁中繪製 3D 場景？從 WebGL 的基礎開始說起』系列文章的第 2 篇文章。本系列文章從 WebGL 之基礎開始介紹，最後建構出繪製 3D、光影效果之網頁。本章節講述的是 WebGL 基本的運作機制以及如何使用其提供的功能
 
 在讓電腦繪製一個三維場景時，我們實際在做的事情把這三維場景中物體的『表面』畫在畫面上，而構成一個面最少需要三個點，三個點構成一個三角形，而所有更複雜的形狀或是表面都可以用複數個三角形做出來，因此使用 3D 繪製相關的工具時基本的單位往往是三角形，我們就來使用 WebGL 畫一個三角形吧！
 
@@ -238,9 +240,9 @@ const program = createProgram(gl, vertexShader, fragmentShader);
 
 ## Day 3: 畫一個三角形（下）
 
-大家好，大家都叫我西瓜，你現在看到的是 2021 iThome 鐵人賽『如何在網頁中繪製 3D 場景？從 WebGL 的基礎開始說起』系列文章的第 3 篇文章。本系列文章從 WebGL 之基礎開始介紹，最後建構出繪製 3D、光影效果之網頁。本章節講述的是 WebGL 基本的運作機制以及如何使用其提供的功能
+大家好，我是西瓜，你現在看到的是 2021 iThome 鐵人賽『如何在網頁中繪製 3D 場景？從 WebGL 的基礎開始說起』系列文章的第 3 篇文章。本系列文章從 WebGL 之基礎開始介紹，最後建構出繪製 3D、光影效果之網頁。本章節講述的是 WebGL 基本的運作機制以及如何使用其提供的功能
 
-在上一篇 WebGL 的繪製流程，同時也建立了 shader 並鍊結成 program，如果有需要可以回到上一篇複習：[Day 2: 畫一個三角形（上）](TBD)，而接下來要告訴 GPU 『畫什麼』，精確來說，就是提供上一篇 vertex shader 中 `a_position` 所需的資料
+在上一篇 WebGL 的繪製流程，同時也建立了 shader 並鍊結成 program，如果有需要可以回到上一篇複習：[Day 2: 畫一個三角形（上）](https://ithelp.ithome.com.tw/articles/10258991)，而接下來要告訴 GPU 『畫什麼』，精確來說，就是提供上一篇 vertex shader 中 `a_position` 所需的資料
 
 ### 取得 Attribute 位置
 
@@ -360,7 +362,7 @@ gl.drawArrays(gl.TRIANGLES, 0, 3);
 
 ## Day 4: Uniform -- shader 之參數
 
-大家好，大家都叫我西瓜，你現在看到的是 2021 iThome 鐵人賽『如何在網頁中繪製 3D 場景？從 WebGL 的基礎開始說起』系列文章的第 4 篇文章。本系列文章從 WebGL 之基礎開始介紹，最後建構出繪製 3D、光影效果之網頁。本章節講述的是 WebGL 基本的運作機制以及如何使用其提供的功能，如果在閱讀本文時覺得有什麼未知的東西被當成已知的，可能可以在[前面的文章中](https://ithelp.ithome.com.tw/users/20140099/ironman/3929)找到相關的內容
+大家好，我是西瓜，你現在看到的是 2021 iThome 鐵人賽『如何在網頁中繪製 3D 場景？從 WebGL 的基礎開始說起』系列文章的第 4 篇文章。本系列文章從 WebGL 之基礎開始介紹，最後建構出繪製 3D、光影效果之網頁。本章節講述的是 WebGL 基本的運作機制以及如何使用其提供的功能，如果在閱讀本文時覺得有什麼未知的東西被當成已知的，可能可以在[前面的文章中](https://ithelp.ithome.com.tw/users/20140099/ironman/3929)找到相關的內容
 
 ### 使用『畫布中的 x/y pixel 位置』定位
 
@@ -496,7 +498,7 @@ gl.viewport(0, 0, canvas.width, canvas.height);
 
 ## Day 5: Varying -- fragment shader 之資料
 
-大家好，大家都叫我西瓜，你現在看到的是 2021 iThome 鐵人賽『如何在網頁中繪製 3D 場景？從 WebGL 的基礎開始說起』系列文章的第 5 篇文章。本系列文章從 WebGL 之基礎開始介紹，最後建構出繪製 3D、光影效果之網頁。本章節講述的是 WebGL 基本的運作機制以及如何使用其提供的功能，如果在閱讀本文時覺得有什麼未知的東西被當成已知的，可能可以在[前面的文章中](https://ithelp.ithome.com.tw/users/20140099/ironman/3929)找到相關的內容
+大家好，我是西瓜，你現在看到的是 2021 iThome 鐵人賽『如何在網頁中繪製 3D 場景？從 WebGL 的基礎開始說起』系列文章的第 5 篇文章。本系列文章從 WebGL 之基礎開始介紹，最後建構出繪製 3D、光影效果之網頁。本章節講述的是 WebGL 基本的運作機制以及如何使用其提供的功能，如果在閱讀本文時覺得有什麼未知的東西被當成已知的，可能可以在[前面的文章中](https://ithelp.ithome.com.tw/users/20140099/ironman/3929)找到相關的內容
 
 ### 畫多個三角形
 
@@ -542,13 +544,13 @@ gl.drawArrays(gl.TRIANGLES, 0, 9);
 
 ### 顏色不同的三角形
 
-在 [Day 2](TBD) 我們實做的 fragment shader 只是純粹把顏色指定上去，所以現在不論畫幾個三角形，顏色都是當初寫死在 fragment shader 中的顏色：
+在 [Day 2](https://ithelp.ithome.com.tw/articles/10258991) 我們實做的 fragment shader 只是純粹把顏色指定上去，所以現在不論畫幾個三角形，顏色都是當初寫死在 fragment shader 中的顏色：
 
 ```c=
 gl_FragColor = vec4(0.4745, 0.3333, 0.2823, 1);
 ```
 
-要讓不同三角形有不同的顏色，要思考的是輸入資料/參數給 fragment shader 的方式，在 fragment shader 中可以使用 uniform，但是那樣的話所有三角形的顏色依然會是一樣，得用類似 attribute / buffer 『每次 shader 呼叫不同』的東西，不過 fragment shader 中是不能使用 attribute 的功能的，回想 [Day 2](TBD) fragment shader 的運作方式：fragment shader 是每個 pixel 執行一次，不像是 vertex shader 以頂點為單位，取用 array buffer 的方式顯然對不起來，因此需要另外一種傳輸工具 -- varying
+要讓不同三角形有不同的顏色，要思考的是輸入資料/參數給 fragment shader 的方式，在 fragment shader 中可以使用 uniform，但是那樣的話所有三角形的顏色依然會是一樣，得用類似 attribute / buffer 『每次 shader 呼叫不同』的東西，不過 fragment shader 中是不能使用 attribute 的功能的，回想 [Day 2](https://ithelp.ithome.com.tw/articles/10258991) fragment shader 的運作方式：fragment shader 是每個 pixel 執行一次，不像是 vertex shader 以頂點為單位，取用 array buffer 的方式顯然對不起來，因此需要另外一種傳輸工具 -- varying
 
 ### Varying
 
@@ -600,7 +602,7 @@ void main() {
  }
 ```
 
-可以看到筆者加了一個 `attribute vec3 a_color`，並且直接把 `v_color` 指定成 `a_color` 的值，接下來就是重複 [Day 3](TBD) 『畫什麼』的資料輸入、vertex attribute array 等設定：
+可以看到筆者加了一個 `attribute vec3 a_color`，並且直接把 `v_color` 指定成 `a_color` 的值，接下來就是重複 [Day 3](https://ithelp.ithome.com.tw/articles/10259806) 『畫什麼』的資料輸入、vertex attribute array 等設定：
 
 
 ```javascript=
@@ -642,11 +644,11 @@ gl.bufferData(
 );
 ```
 
-這段程式碼原理在 [Day 3](TBD) 都有提過，比較需要注意幾點：
+這段程式碼原理在 [Day 3](https://ithelp.ithome.com.tw/articles/10259806) 都有提過，比較需要注意幾點：
 
 1. `gl.vertexAttribPointer()` 以及 `gl.bufferData()` 該行執行的當下要注意 bind 的 `ARRAY_BUFFER` 是哪個，要不然會對著錯誤的目標做事，當然最好的就是把對於一個 attribute 的操作清楚分好，日後也比較好看出該區域在操作的對象
 2. `gl.vertexAttribPointer()` 的 `size: 3`，因為顏色有 3 個 channel: RGB，因此對於每個頂點 `gl.bufferData()` 要給 3 個值
-3. 筆者在 `gl.vertexAttribPointer()` 使用 `gl.UNSIGNED_BYTE` 配合 `normalize: true` 來使用，在 [Day 3](TBD) 有提到： normalize 配合整數型別時可以把資料除以該型別的最大值使 attribute 變成介於 <= 1 的浮點數，那麼在 `gl.bufferData()` 時傳入 `Uint8Array`，並且可以在資料內容寫熟悉的 rgb 值
+3. 筆者在 `gl.vertexAttribPointer()` 使用 `gl.UNSIGNED_BYTE` 配合 `normalize: true` 來使用，在 [Day 3](https://ithelp.ithome.com.tw/articles/10259806) 有提到： normalize 配合整數型別時可以把資料除以該型別的最大值使 attribute 變成介於 <= 1 的浮點數，那麼在 `gl.bufferData()` 時傳入 `Uint8Array`，並且可以在資料內容寫熟悉的 rgb 值
 
 總結來說資料流如下：
 

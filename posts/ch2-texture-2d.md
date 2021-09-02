@@ -7,13 +7,13 @@ CH2: texture and 2D [WebGL 鐵人]
 
 ## Day 6: 在 WebGL 取用、顯示圖片 -- Textures
 
-大家好，大家都叫我西瓜，你現在看到的是 2021 iThome 鐵人賽『如何在網頁中繪製 3D 場景？從 WebGL 的基礎開始說起』系列文章的第 6 篇文章。本系列文章從 WebGL 基本運作機制以及使用的原理開始介紹，最後建構出繪製 3D、光影效果之網頁。如果在閱讀本文時覺得有什麼未知的東西被當成已知的，可能可以在[前面的文章中](https://ithelp.ithome.com.tw/users/20140099/ironman/3929)找到相關的內容
+大家好，我是西瓜，你現在看到的是 2021 iThome 鐵人賽『如何在網頁中繪製 3D 場景？從 WebGL 的基礎開始說起』系列文章的第 6 篇文章。本系列文章從 WebGL 基本運作機制以及使用的原理開始介紹，最後建構出繪製 3D、光影效果之網頁。如果在閱讀本文時覺得有什麼未知的東西被當成已知的，可能可以在[前面的文章中](https://ithelp.ithome.com.tw/users/20140099/ironman/3929)找到相關的內容
 
 有在玩遊戲的讀著們在討論一款 3D 遊戲的時候，可能有提到遊戲內的『3D 貼圖』，遊戲 3D 物件表面常常不會是純色或是漸層單調的樣子，而是有一張圖片貼在這個物件表面的感覺，所以才叫做『3D 貼圖』吧，而且也可以用在圖案重複的『材質』顯示上，因此在英文叫做 texture。雖然現在還完全沒有進入 3D 的部份，但是 3D 貼圖/texture 追根究底得有個方法在 WebGL 裡面取用、顯示圖片，本篇抽離 3D 的部份，來介紹在 WebGL 取用、顯示圖片的方式
 
 ### `02-texture-2d.html` / `02-texture-2d.js`
 
-本篇開始將使用新的 `.html` 作為開始，起始點完整程式碼可以在這邊找到：[github.com/pastleo/webgl-ironman/commit/75179fb](https://github.com/pastleo/webgl-ironman/commit/75179fb4c0accee221bdc230520039f82538077c)，筆者將 `createShader`, `createProgram` 移動到工具箱 [`lib/utils.js`](https://github.com/pastleo/webgl-ironman/commit/75179fb4c0accee221bdc230520039f82538077c#diff-5dfe38baf287dcf756a17c2dd63483781b53bf4b669e10efdd01e74bcd8e780a)，裡面有 `loadImage` 用來下載並回傳 [`Image`](https://developer.mozilla.org/en-US/docs/Web/API/HTMLImageElement/Image) 元素（注意，是 async function），並且 `position` 與 [Day 5](TBD) 相同使用 pixel 座標定位，看起來像是這樣：
+本篇開始將使用新的 `.html` 作為開始，起始點完整程式碼可以在這邊找到：[github.com/pastleo/webgl-ironman/commit/75179fb](https://github.com/pastleo/webgl-ironman/commit/75179fb4c0accee221bdc230520039f82538077c)，筆者將 `createShader`, `createProgram` 移動到工具箱 [`lib/utils.js`](https://github.com/pastleo/webgl-ironman/commit/75179fb4c0accee221bdc230520039f82538077c#diff-5dfe38baf287dcf756a17c2dd63483781b53bf4b669e10efdd01e74bcd8e780a)，裡面有 `loadImage` 用來下載並回傳 [`Image`](https://developer.mozilla.org/en-US/docs/Web/API/HTMLImageElement/Image) 元素（注意，是 async function），並且 `position` 與 [Day 5](https://ithelp.ithome.com.tw/articles/10260366) 相同使用 pixel 座標定位，看起來像是這樣：
 
 ![02-texture-2d-start](https://i.imgur.com/t7cPxet.png)
 
@@ -93,7 +93,7 @@ void main() {
 
 ### Varying `v_texcoord`
 
-與 [Day 5](TBD) 類似，既然 fragment shader 需要 varying，因此得在 vertex shader 提供 varying，vertex shader 又需要從 attribute 取得 texture 各個頂點需要取用的座標，對 vertex shader 加上這幾行：
+與 [Day 5](https://ithelp.ithome.com.tw/articles/10260366) 類似，既然 fragment shader 需要 varying，因此得在 vertex shader 提供 varying，vertex shader 又需要從 attribute 取得 texture 各個頂點需要取用的座標，對 vertex shader 加上這幾行：
 
 ```diff=
  attribute vec2 a_position;
@@ -176,7 +176,7 @@ gl.uniform1i(textureUniformLocation, textureUnit);
 * `textureUnit` 為通道的編號，設定為 `0` 使用第一個通道
 * `gl.bindTexture` 把目標指向建立好的 `texture`，如果有其他 texture 導致目標更換時，這邊要把目標設定正確，雖然本篇只有一個 texture 就是了
 * `gl.activeTexture()` 啟用通道並把目標 texture 設定到通道上，這邊還有神奇的 `gl.TEXTURE0 + textureUnit` 寫法；讀者可以嘗試在 Console 輸入 `gl.TEXTURE1 - gl.TEXTURE0` (`1`)，或是 `gl.TEXTURE5 - gl.TEXTURE2` (`3`)，就可以知道為什麼可以用 `+` 共用 `textureUnit` 指定通道了
-* 在 [Day 4](TBD) 介紹 uniform 提到對於每種資料型別都有一個傳入 function，`gl.uniform1i` 傳的是 1 個整數，把通道的編號傳入，在 fragment shader 中就會直接被反應成 `sampler2D`
+* 在 [Day 4](https://ithelp.ithome.com.tw/articles/10260061) 介紹 uniform 提到對於每種資料型別都有一個傳入 function，`gl.uniform1i` 傳的是 1 個整數，把通道的編號傳入，在 fragment shader 中就會直接被反應成 `sampler2D`
 
 一切順利的話，就可以看到圖片出現在 canvas 裡頭，fragment shader 成功地『在每個 pixel 運算時從 texture 圖片上的某個位置取出其顏色來輸出』：
 
@@ -193,9 +193,9 @@ gl.uniform1i(textureUniformLocation, textureUnit);
 
 但是關於 texture 其實還有許多細節，待下篇再來繼續討論
 
-## Day 7: more about Textures
+## Day 7: More About Textures
 
-大家好，大家都叫我西瓜，你現在看到的是 2021 iThome 鐵人賽『如何在網頁中繪製 3D 場景？從 WebGL 的基礎開始說起』系列文章的第 7 篇文章。本系列文章從 WebGL 基本運作機制以及使用的原理開始介紹，最後建構出繪製 3D、光影效果之網頁。講完 WebGL 基本機制後，本章節講述的是 texture，如果在閱讀本文時覺得有什麼未知的東西被當成已知的，可能可以在[前面的文章中](https://ithelp.ithome.com.tw/users/20140099/ironman/3929)找到相關的內容
+大家好，我是西瓜，你現在看到的是 2021 iThome 鐵人賽『如何在網頁中繪製 3D 場景？從 WebGL 的基礎開始說起』系列文章的第 7 篇文章。本系列文章從 WebGL 基本運作機制以及使用的原理開始介紹，最後建構出繪製 3D、光影效果之網頁。講完 WebGL 基本機制後，本章節講述的是 texture，如果在閱讀本文時覺得有什麼未知的東西被當成已知的，可能可以在[前面的文章中](https://ithelp.ithome.com.tw/users/20140099/ironman/3929)找到相關的內容
 
 ### 換張圖試試看？
 
@@ -394,7 +394,7 @@ gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
 
 ## Day 8: 互動 & 動畫
 
-大家好，大家都叫我西瓜，你現在看到的是 2021 iThome 鐵人賽『如何在網頁中繪製 3D 場景？從 WebGL 的基礎開始說起』系列文章的第 8 篇文章。本系列文章從 WebGL 基本運作機制以及使用的原理開始介紹，最後建構出繪製 3D、光影效果之網頁。講完 WebGL 基本機制後，本章節講述的是 texture 以及 2D transform，如果在閱讀本文時覺得有什麼未知的東西被當成已知的，可能可以在[前面的文章中](https://ithelp.ithome.com.tw/users/20140099/ironman/3929)找到相關的內容
+大家好，我是西瓜，你現在看到的是 2021 iThome 鐵人賽『如何在網頁中繪製 3D 場景？從 WebGL 的基礎開始說起』系列文章的第 8 篇文章。本系列文章從 WebGL 基本運作機制以及使用的原理開始介紹，最後建構出繪製 3D、光影效果之網頁。講完 WebGL 基本機制後，本章節講述的是 texture 以及 2D transform，如果在閱讀本文時覺得有什麼未知的東西被當成已知的，可能可以在[前面的文章中](https://ithelp.ithome.com.tw/users/20140099/ironman/3929)找到相關的內容
 
 有用到 WebGL 繪製的網頁通常都是『會動』的，有許多會根據使用者操作反應在畫面上，或者是根據時間產生變化的動畫，本篇將基於先前用 texture 渲染的畫面，加入簡易的 WebGL 互動、動畫功能
 
@@ -479,7 +479,7 @@ function render(app) {
 }
 ```
 
-可以注意到這邊除了設定 uniform 以及最後的 `gl.drawArrays()` 之外，還包含了調整 canvas 大小、繪製區域的程式，這樣就可以在重畫的時候解決 [Day 4](TBD) 讀取網頁後調整視窗大小時造成的拉伸問題。最後 `main()` 就是負責把 `setup()` 以及 `render()` 串起來：
+可以注意到這邊除了設定 uniform 以及最後的 `gl.drawArrays()` 之外，還包含了調整 canvas 大小、繪製區域的程式，這樣就可以在重畫的時候解決 [Day 4](https://ithelp.ithome.com.tw/articles/10260061) 讀取網頁後調整視窗大小時造成的拉伸問題。最後 `main()` 就是負責把 `setup()` 以及 `render()` 串起來：
 
 ```javascript=
 async function main() {
@@ -794,7 +794,7 @@ function startLoop(app, now = 0) {
 
 ## Day 9: 2D Transform
 
-大家好，大家都叫我西瓜，你現在看到的是 2021 iThome 鐵人賽『如何在網頁中繪製 3D 場景？從 WebGL 的基礎開始說起』系列文章的第 9 篇文章。本系列文章從 WebGL 基本運作機制以及使用的原理開始介紹，最後建構出繪製 3D、光影效果之網頁。講完 WebGL 基本機制後，本章節講述的是 texture 以及 2D transform，如果在閱讀本文時覺得有什麼未知的東西被當成已知的，可能可以在[前面的文章中](https://ithelp.ithome.com.tw/users/20140099/ironman/3929)找到相關的內容
+大家好，我是西瓜，你現在看到的是 2021 iThome 鐵人賽『如何在網頁中繪製 3D 場景？從 WebGL 的基礎開始說起』系列文章的第 9 篇文章。本系列文章從 WebGL 基本運作機制以及使用的原理開始介紹，最後建構出繪製 3D、光影效果之網頁。講完 WebGL 基本機制後，本章節講述的是 texture 以及 2D transform，如果在閱讀本文時覺得有什麼未知的東西被當成已知的，可能可以在[前面的文章中](https://ithelp.ithome.com.tw/users/20140099/ironman/3929)找到相關的內容
 
 在上篇加入了 `u_offset` 來控制物件的平移，如果我們現在想要進行縮放、旋轉，那麼就得在傳入更多 uniform，而且這些動作會有誰先作用的差別，比方說，先往右旋轉 90 度、接著往右平移 30px，與先往右平移 30px、再往右旋轉 90 度，這兩著會獲得不一樣的結果，如果只是傳平移量、縮放量、旋轉度數，在 vertex shader 內得有一個寫死的的先後作用順序，那麼在應用層面上就會受到這個先後順序的限制，因此在 vertex 運算座標的時候，通常會運用線性代數，傳入一個矩陣，這個矩陣就能包含任意先後順序的平移、縮放、旋轉動作
 
@@ -985,7 +985,7 @@ gl_Position = u_matrix * a_position;
 
 ## Day 10: 2D transform Continued
 
-大家好，大家都叫我西瓜，你現在看到的是 2021 iThome 鐵人賽『如何在網頁中繪製 3D 場景？從 WebGL 的基礎開始說起』系列文章的第 10 篇文章。本系列文章從 WebGL 基本運作機制以及使用的原理開始介紹，最後建構出繪製 3D、光影效果之網頁。講完 WebGL 基本機制後，本章節講述的是 texture 以及 2D transform，如果在閱讀本文時覺得有什麼未知的東西被當成已知的，可能可以在[前面的文章中](https://ithelp.ithome.com.tw/users/20140099/ironman/3929)找到相關的內容
+大家好，我是西瓜，你現在看到的是 2021 iThome 鐵人賽『如何在網頁中繪製 3D 場景？從 WebGL 的基礎開始說起』系列文章的第 10 篇文章。本系列文章從 WebGL 基本運作機制以及使用的原理開始介紹，最後建構出繪製 3D、光影效果之網頁。講完 WebGL 基本機制後，本章節講述的是 texture 以及 2D transform，如果在閱讀本文時覺得有什麼未知的東西被當成已知的，可能可以在[前面的文章中](https://ithelp.ithome.com.tw/users/20140099/ironman/3929)找到相關的內容
 
 上篇把原本透過 `u_offset`、`u_resolution` 來控制平移以及 clip space 投影換成只用一個矩陣來做轉換，我們實做了矩陣的相乘 (multiply)、平移 (translate) 以及縮放 (scale)，在常見的 transform 中還剩下旋轉 (rotation) 尚未實做，除此之外 `lib/matrix.js` 也缺乏一些常用的小工具，本篇將加上平移、縮放、旋轉之控制項，同時把這些矩陣工具補完
 
@@ -1026,7 +1026,7 @@ gl_Position = u_matrix * a_position;
 
 像是速度控制那樣，在 HTML 中分別給 X 軸平移、Y 軸平移、縮放、旋轉一個 [range input](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/range)：
 
-```htmlembedded=
+```html=
 <!-- <form id="controls"> -->
 <!-- ... -->
   <div class="py-1">

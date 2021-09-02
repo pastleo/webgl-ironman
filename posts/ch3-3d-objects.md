@@ -7,7 +7,7 @@ CH3: 3D and Objects [WebGL 鐵人]
 
 ## Day 11: Orthogonal 3D 投影
 
-大家好，大家都叫我西瓜，你現在看到的是 2021 iThome 鐵人賽『如何在網頁中繪製 3D 場景？從 WebGL 的基礎開始說起』系列文章的第 11 篇文章。本系列文章從 WebGL 基本運作機制以及使用的原理開始介紹，最後建構出繪製 3D、光影效果之網頁。如果在閱讀本文時覺得有什麼未知的東西被當成已知的，可能可以在[前面的文章中](https://ithelp.ithome.com.tw/users/20140099/ironman/3929)找到相關的內容
+大家好，我是西瓜，你現在看到的是 2021 iThome 鐵人賽『如何在網頁中繪製 3D 場景？從 WebGL 的基礎開始說起』系列文章的第 11 篇文章。本系列文章從 WebGL 基本運作機制以及使用的原理開始介紹，最後建構出繪製 3D、光影效果之網頁。如果在閱讀本文時覺得有什麼未知的東西被當成已知的，可能可以在[前面的文章中](https://ithelp.ithome.com.tw/users/20140099/ironman/3929)找到相關的內容
 
 ["Orthogonal" 查詢字典](https://dictionary.cambridge.org/zht/%E8%A9%9E%E5%85%B8/%E8%8B%B1%E8%AA%9E-%E6%BC%A2%E8%AA%9E-%E7%B9%81%E9%AB%94/orthogonal)的話得到的意思是：直角的，正交的，垂直的，而 [orthogonal 3D projection](https://en.wikipedia.org/wiki/Orthographic_projection) 筆者的理解是：從 3D 場景中選取一個長方體區域作為 clip space 投影到畫布上，事實上與先前 2D 投影非常類似，只是多一個維度 `z`，在 orthogonal 3D 投影時叫做深度，本篇的目標將以 orthogonal 3D 投影的方式渲染一個 P 文字形狀的 3D 物件
 
@@ -20,6 +20,8 @@ CH3: 3D and Objects [WebGL 鐵人]
   * 在三維場景中能夠以 x 軸、y 軸、z 軸旋轉，因此旋轉部份有 `xRotate`, `yRotate`, `zRotate`
 * `a_position`, `a_color` 在起始點的 buffer 傳入空陣列、`viewMatrix`, `worldMatrix` 起始點為 `matrix4.identity()`，什麼都不做、`gl.drawArrays(gl.TRIANGLES, 0, 0);` 繪製 0 個頂點，這些都將在本篇補上
 * 本篇不會用到動畫效果，因此 `startLoop` 被註解不會用到
+
+仔細看的話，會發現在 vertex shader 中的 `a_position` 宣告型別為 `vec4`，可以直接與 4x4 矩陣 `u_matrix` 相乘，但是在設定傳入的資料時候 `gl.vertexAttribPointer()` 指定的長度只有 3，那麼剩下的向量第四個元素（接下來稱為 w）的值怎麼辦？有意思的是，在提供的資料長度不足或是沒有提供時 x, y, z 預設值為 `0`，而 w 很有意思地預設值是 `1` ，對於所有 `vec4` 的 vertex attribute 都是如此，這樣一來就可以符合平移時多餘維度為 `1` 的需求，很巧的是，如果今天這個 attribute 是顏色，那意義上就變成 alpha 預設值是 `1`
 
 ### P 文字形狀的 3D 物件
 
@@ -295,7 +297,7 @@ gl.enable(gl.DEPTH_TEST);
 
 ## Day 12: Perspective 3D 成像
 
-大家好，大家都叫我西瓜，你現在看到的是 2021 iThome 鐵人賽『如何在網頁中繪製 3D 場景？從 WebGL 的基礎開始說起』系列文章的第 12 篇文章。本系列文章從 WebGL 基本運作機制以及使用的原理開始介紹，最後建構出繪製 3D、光影效果之網頁。介紹完 WebGL 運作方式與 2D transform 後，本章節講述的是建構並 transform 渲染成 3D 物件，如果在閱讀本文時覺得有什麼未知的東西被當成已知的，可能可以在[前面的文章中](https://ithelp.ithome.com.tw/users/20140099/ironman/3929)找到相關的內容
+大家好，我是西瓜，你現在看到的是 2021 iThome 鐵人賽『如何在網頁中繪製 3D 場景？從 WebGL 的基礎開始說起』系列文章的第 12 篇文章。本系列文章從 WebGL 基本運作機制以及使用的原理開始介紹，最後建構出繪製 3D、光影效果之網頁。介紹完 WebGL 運作方式與 2D transform 後，本章節講述的是建構並 transform 渲染成 3D 物件，如果在閱讀本文時覺得有什麼未知的東西被當成已知的，可能可以在[前面的文章中](https://ithelp.ithome.com.tw/users/20140099/ironman/3929)找到相關的內容
 
 使用 perspective 3D 投影渲染物件時，相當於模擬現實生活眼睛、相機捕捉的光線形成的投影，也是大多 3D 遊戲使用的投影方式，學會這種投影方式，才算是真正進入 3D 渲染的世界，那麼我們就開始吧
 
@@ -406,7 +408,7 @@ matrix4.perspective(
 
 ## Day 13: 視角 Transform
 
-大家好，大家都叫我西瓜，你現在看到的是 2021 iThome 鐵人賽『如何在網頁中繪製 3D 場景？從 WebGL 的基礎開始說起』系列文章的第 13 篇文章。本系列文章從 WebGL 基本運作機制以及使用的原理開始介紹，最後建構出繪製 3D、光影效果之網頁。介紹完 WebGL 運作方式與 2D transform 後，本章節講述的是建構並 transform 渲染成 3D 物件，如果在閱讀本文時覺得有什麼未知的東西被當成已知的，可能可以在[前面的文章中](https://ithelp.ithome.com.tw/users/20140099/ironman/3929)找到相關的內容
+大家好，我是西瓜，你現在看到的是 2021 iThome 鐵人賽『如何在網頁中繪製 3D 場景？從 WebGL 的基礎開始說起』系列文章的第 13 篇文章。本系列文章從 WebGL 基本運作機制以及使用的原理開始介紹，最後建構出繪製 3D、光影效果之網頁。介紹完 WebGL 運作方式與 2D transform 後，本章節講述的是建構並 transform 渲染成 3D 物件，如果在閱讀本文時覺得有什麼未知的東西被當成已知的，可能可以在[前面的文章中](https://ithelp.ithome.com.tw/users/20140099/ironman/3929)找到相關的內容
 
 有了 `matrix4.perspective()` 使用眼睛/相機的方式進行成像，反而讓畫面變成一片慘白，假設把 3D 物件本身的 transform 取消，也就是 `worldMatrix` 設定成 `matrix4.identity()`，那麼 3D 物件與 frustum 區域的相對關係看起來像是這樣：
 
@@ -491,7 +493,7 @@ HTML 那邊的預設值也得改一下，看起來就好多囉：
 
 ## Day 14: 相機控制
 
-大家好，大家都叫我西瓜，你現在看到的是 2021 iThome 鐵人賽『如何在網頁中繪製 3D 場景？從 WebGL 的基礎開始說起』系列文章的第 14 篇文章。本系列文章從 WebGL 基本運作機制以及使用的原理開始介紹，最後建構出繪製 3D、光影效果之網頁。介紹完 WebGL 運作方式與 2D transform 後，本章節講述的是建構、transform 並渲染 3D 物件，如果在閱讀本文時覺得有什麼未知的東西被當成已知的，可能可以在[前面的文章中](https://ithelp.ithome.com.tw/users/20140099/ironman/3929)找到相關的內容
+大家好，我是西瓜，你現在看到的是 2021 iThome 鐵人賽『如何在網頁中繪製 3D 場景？從 WebGL 的基礎開始說起』系列文章的第 14 篇文章。本系列文章從 WebGL 基本運作機制以及使用的原理開始介紹，最後建構出繪製 3D、光影效果之網頁。介紹完 WebGL 運作方式與 2D transform 後，本章節講述的是建構、transform 並渲染 3D 物件，如果在閱讀本文時覺得有什麼未知的東西被當成已知的，可能可以在[前面的文章中](https://ithelp.ithome.com.tw/users/20140099/ironman/3929)找到相關的內容
 
 有了 perspective 投影以及加入反向 `cameraMatrix` 的 `viewkMatrix` ，我們擁有一套系統來模擬現實生活中眼睛、相機在想要的位置進行成像，方法也跟場景中的 3D 物件類似：在 `cameraMatrix` 中加入想要的 transform。同時也可以來比較一下 orthogonal ([live 版本](https://static.pastleo.me/webgl-ironman/commits/7664b6ba35cc19fa3aa7d045c2e75111bde95a6e/03-3d-objects.html))與 perspective ([live 版本](https://static.pastleo.me/webgl-ironman/commits/0c0725de38dea86000614fef5fade454197438a1/03-3d-objects.html))投影的差別，最大的差別大概就是物件在不同 z 軸位置時成像的『遠近』了：
 
@@ -655,7 +657,7 @@ function startLoop(app, now = 0) {
 
 ## Day 15: Multiple objects (上)
 
-大家好，大家都叫我西瓜，你現在看到的是 2021 iThome 鐵人賽『如何在網頁中繪製 3D 場景？從 WebGL 的基礎開始說起』系列文章的第 15 篇文章。本系列文章從 WebGL 基本運作機制以及使用的原理開始介紹，最後建構出繪製 3D、光影效果之網頁。介紹完 WebGL 運作方式與 2D transform 後，本章節講述的是建構、transform 並渲染多個 3D 物件，如果在閱讀本文時覺得有什麼未知的東西被當成已知的，可能可以在[前面的文章中](https://ithelp.ithome.com.tw/users/20140099/ironman/3929)找到相關的內容
+大家好，我是西瓜，你現在看到的是 2021 iThome 鐵人賽『如何在網頁中繪製 3D 場景？從 WebGL 的基礎開始說起』系列文章的第 15 篇文章。本系列文章從 WebGL 基本運作機制以及使用的原理開始介紹，最後建構出繪製 3D、光影效果之網頁。介紹完 WebGL 運作方式與 2D transform 後，本章節講述的是建構、transform 並渲染多個 3D 物件，如果在閱讀本文時覺得有什麼未知的東西被當成已知的，可能可以在[前面的文章中](https://ithelp.ithome.com.tw/users/20140099/ironman/3929)找到相關的內容
 
 到目前的範例，畫面上都只有一個物件，既然已經介紹完 3D 物件的產生、在空間中的 transform、相機控制以及 perspective 投影到畫布上，接下來來讓所謂『場景』比較有場景的感覺，加入一顆球體以及地板：
 
@@ -814,7 +816,7 @@ void main() {
 
 我們接下來要產生球體以及地板所需的 `a_position`，也就是每個三角形各個頂點的位置，難道我們又要寫一長串程式來產生這些資料了嗎？幸好網路上有大大已經幫我們寫好了 -- [TWGL: A Tiny WebGL helper Library](https://twgljs.org/docs/index.html)
 
-這個套件裡面不僅可以產生球體、平面等物件所需的資料，同時他也是一層對 WebGL 的薄薄包裝，讀者們應該也有感受到 WebGL API 的冗長，像是從 [Day 6](TBD) 開始我們自己包裝的 `createShader` / `createProgram`，到 vertex attribute, buffer 等操作都有，使得程式碼可以減少不少，在套件首頁上就有不少使用 WebGL API 以及 TWGL 的比較；不過本篇就先只用到 [`twgl.primitives`](https://twgljs.org/docs/module-twgl_primitives.html) 來產生球體、平面物件的資料
+這個套件裡面不僅可以產生球體、平面等物件所需的資料，同時他也是一層對 WebGL 的薄薄包裝，讀者們應該也有感受到 WebGL API 的冗長，像是從 [Day 6](https://ithelp.ithome.com.tw/articles/10260664) 開始我們自己包裝的 `createShader` / `createProgram`，到 vertex attribute, buffer 等操作都有，使得程式碼可以減少不少，在套件首頁上就有不少使用 WebGL API 以及 TWGL 的比較；不過本篇就先只用到 [`twgl.primitives`](https://twgljs.org/docs/module-twgl_primitives.html) 來產生球體、平面物件的資料
 
 引入這個套件有[很多方法](https://github.com/greggman/twgl.js#download)，筆者使用 [unpkg](https://unpkg.com/) 所提供的 CDN 服務，在 [ES module](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules) 中，直接引用：
 
@@ -916,13 +918,13 @@ function render(app) {
 ## Day 16: Multiple objects (下)
 
 
-大家好，大家都叫我西瓜，你現在看到的是 2021 iThome 鐵人賽『如何在網頁中繪製 3D 場景？從 WebGL 的基礎開始說起』系列文章的第 16 篇文章。本系列文章從 WebGL 基本運作機制以及使用的原理開始介紹，最後建構出繪製 3D、光影效果之網頁。介紹完 WebGL 運作方式與 2D transform 後，本章節講述的是建構、transform 並渲染多個 3D 物件，如果在閱讀本文時覺得有什麼未知的東西被當成已知的，可能可以在[前面的文章中](https://ithelp.ithome.com.tw/users/20140099/ironman/3929)找到相關的內容
+大家好，我是西瓜，你現在看到的是 2021 iThome 鐵人賽『如何在網頁中繪製 3D 場景？從 WebGL 的基礎開始說起』系列文章的第 16 篇文章。本系列文章從 WebGL 基本運作機制以及使用的原理開始介紹，最後建構出繪製 3D、光影效果之網頁。介紹完 WebGL 運作方式與 2D transform 後，本章節講述的是建構、transform 並渲染多個 3D 物件，如果在閱讀本文時覺得有什麼未知的東西被當成已知的，可能可以在[前面的文章中](https://ithelp.ithome.com.tw/users/20140099/ironman/3929)找到相關的內容
 
 在上一篇我們輸入了兩組 3D 物件的資料，但是最後因為沒有改變 vertex attribute 使用的 buffer 導致繪製了不符合預期的結果，要能讓 vertex attribute 與 buffer 的關聯快速做切換，我們需要 [`OES_vertex_array_object`](https://developer.mozilla.org/en-US/docs/Web/API/OES_vertex_array_object) 這個 WebGL extension
 
 ### Vertex Attribute Object (VAO)
 
-回想一下 [Day 3](TBD) 把 buffer 與 vertex attribute 建立關係的部份，也就是下圖紅色框起來的區域
+回想一下 [Day 3](https://ithelp.ithome.com.tw/articles/10259806) 把 buffer 與 vertex attribute 建立關係的部份，也就是下圖紅色框起來的區域
 
 ![vertex-attrib-pointer](https://static.pastleo.me/assets/day16-vertex-attrib-pointer-210901230025.svg)
 
