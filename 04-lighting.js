@@ -5,28 +5,37 @@ import { matrix4 } from './lib/matrix.js';
 const vertexShaderSource = `
 attribute vec4 a_position;
 attribute vec2 a_texcoord;
+attribute vec4 a_normal;
 
 uniform mat4 u_matrix;
+uniform mat4 u_normalMatrix;
 
 varying vec2 v_texcoord;
+varying vec3 v_normal;
 
 void main() {
   gl_Position = u_matrix * a_position;
   v_texcoord = vec2(a_texcoord.x, 1.0 - a_texcoord.y);
+  v_normal = (u_normalMatrix * a_normal).xyz;
 }
 `;
 
 const fragmentShaderSource = `
 precision highp float;
 
-uniform vec3 u_color;
+uniform vec3 u_diffuse;
 uniform sampler2D u_texture;
+uniform vec3 u_lightDir;
 
 varying vec2 v_texcoord;
+varying vec3 v_normal;
 
 void main() {
-  vec3 color = u_color + texture2D(u_texture, v_texcoord).rgb;
-  gl_FragColor = vec4(color, 1);
+  vec3 diffuse = u_diffuse + texture2D(u_texture, v_texcoord).rgb;
+  vec3 normal = normalize(v_normal);
+  vec3 surfaceToLightDir = normalize(-u_lightDir);
+  float diffuseBrightness = clamp(dot(surfaceToLightDir, normal), 0.0, 1.0);
+  gl_FragColor = vec4(diffuse * diffuseBrightness, 1);
 }
 `;
 
@@ -51,11 +60,14 @@ async function setup() {
   const attributes = {
     position: gl.getAttribLocation(program, 'a_position'),
     texcoord: gl.getAttribLocation(program, 'a_texcoord'),
+    normal: gl.getAttribLocation(program, 'a_normal'),
   };
   const uniforms = {
     matrix: gl.getUniformLocation(program, 'u_matrix'),
-    color: gl.getUniformLocation(program, 'u_color'),
+    normalMatrix: gl.getUniformLocation(program, 'u_normalMatrix'),
+    diffuse: gl.getUniformLocation(program, 'u_diffuse'),
     texture: gl.getUniformLocation(program, 'u_texture'),
+    lightDir: gl.getUniformLocation(program, 'u_lightDir'),
   };
 
   const textures = Object.fromEntries(
@@ -156,6 +168,26 @@ async function setup() {
       gl.STATIC_DRAW,
     );
 
+    // a_normal
+    buffers.normal = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.normal);
+
+    gl.enableVertexAttribArray(attributes.normal);
+    gl.vertexAttribPointer(
+      attributes.normal,
+      attribs.normal.numComponents, // size
+      gl.FLOAT, // type
+      false, // normalize
+      0, // stride
+      0, // offset
+    );
+
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array(attribs.normal),
+      gl.STATIC_DRAW,
+    );
+
     objects.ball = {
       attribs, numElements,
       vao, buffers,
@@ -212,6 +244,26 @@ async function setup() {
       gl.STATIC_DRAW,
     );
 
+    // a_normal
+    buffers.normal = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.normal);
+
+    gl.enableVertexAttribArray(attributes.normal);
+    gl.vertexAttribPointer(
+      attributes.normal,
+      attribs.normal.numComponents, // size
+      gl.FLOAT, // type
+      false, // normalize
+      0, // stride
+      0, // offset
+    );
+
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array(attribs.normal),
+      gl.STATIC_DRAW,
+    );
+
     objects.ground = {
       attribs, numElements,
       vao, buffers,
@@ -227,6 +279,7 @@ async function setup() {
     textures, objects,
     state: {
       fieldOfView: degToRad(45),
+      lightDir: [0, -1, 0],
       cameraPosition: [0, 0, 8],
       cameraVelocity: [0, 0, 0],
     },
@@ -255,6 +308,8 @@ function render(app) {
     matrix4.inverse(cameraMatrix),
   );
 
+  gl.uniform3f(uniforms.lightDir, ...state.lightDir);
+
   const textureUnit = 0;
 
   { // ball
@@ -271,7 +326,13 @@ function render(app) {
       matrix4.multiply(viewMatrix, worldMatrix),
     );
 
-    gl.uniform3f(uniforms.color, 0, 0, 0);
+    gl.uniformMatrix4fv(
+      uniforms.normalMatrix,
+      false,
+      matrix4.transpose(matrix4.inverse(worldMatrix)),
+    );
+
+    gl.uniform3f(uniforms.diffuse, 0, 0, 0);
 
     gl.bindTexture(gl.TEXTURE_2D, textures.steel);
     gl.activeTexture(gl.TEXTURE0 + textureUnit);
@@ -294,7 +355,13 @@ function render(app) {
       matrix4.multiply(viewMatrix, worldMatrix),
     );
 
-    gl.uniform3f(uniforms.color, 0, 0, 0);
+    gl.uniformMatrix4fv(
+      uniforms.normalMatrix,
+      false,
+      matrix4.transpose(matrix4.inverse(worldMatrix)),
+    );
+
+    gl.uniform3f(uniforms.diffuse, 0, 0, 0);
 
     gl.bindTexture(gl.TEXTURE_2D, textures.wood);
     gl.activeTexture(gl.TEXTURE0 + textureUnit);
@@ -321,10 +388,14 @@ async function main() {
   window.app = app;
   window.gl = app.gl;
 
-  //const controlsForm = document.getElementById('controls');
-  //controlsForm.addEventListener('input', () => {
-    //const formData = new FormData(controlsForm);
-  //});
+  const controlsForm = document.getElementById('controls');
+  controlsForm.addEventListener('input', () => {
+    const formData = new FormData(controlsForm);
+
+    app.state.lightDir[0] = parseFloat(formData.get('light-dir-x'));
+    app.state.lightDir[1] = parseFloat(formData.get('light-dir-y'));
+    app.state.lightDir[2] = parseFloat(formData.get('light-dir-z'));
+  });
 
   document.addEventListener('keydown', event => {
     handleKeyDown(app, event);

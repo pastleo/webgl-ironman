@@ -27,6 +27,27 @@
 <body>
   <canvas id="canvas"></canvas>
   <form id="controls">
+    <div class="py-1">
+      <label for="light-dir-x">lightDirX</label>
+      <input
+        type="range" id="light-dir-x" name="light-dir-x"
+        min="-1" max="1" value="0" step="0.01"
+      >
+    </div>
+    <div class="py-1">
+      <label for="light-dir-y">lightDirY</label>
+      <input
+        type="range" id="light-dir-y" name="light-dir-y"
+        min="-1" max="1" value="-1" step="0.01"
+      >
+    </div>
+    <div class="py-1">
+      <label for="light-dir-z">lightDirZ</label>
+      <input
+        type="range" id="light-dir-z" name="light-dir-z"
+        min="-1" max="1" value="0" step="0.01"
+      >
+    </div>
   </form>
   <script type="module" src="04-lighting.js"></script>
 </body>
