@@ -55,20 +55,7 @@ async function setup() {
     throw new Error('Your browser does not support WebGL ext: OES_vertex_array_object')
   }
 
-  const program = twgl.createProgram(gl, [vertexShaderSource, fragmentShaderSource]);
-
-  const attributes = {
-    position: gl.getAttribLocation(program, 'a_position'),
-    texcoord: gl.getAttribLocation(program, 'a_texcoord'),
-    normal: gl.getAttribLocation(program, 'a_normal'),
-  };
-  const uniforms = {
-    matrix: gl.getUniformLocation(program, 'u_matrix'),
-    normalMatrix: gl.getUniformLocation(program, 'u_normalMatrix'),
-    diffuse: gl.getUniformLocation(program, 'u_diffuse'),
-    texture: gl.getUniformLocation(program, 'u_texture'),
-    lightDir: gl.getUniformLocation(program, 'u_lightDir'),
-  };
+  const programInfo = twgl.createProgramInfo(gl, [vertexShaderSource, fragmentShaderSource]);
 
   const textures = Object.fromEntries(
     await Promise.all(Object.entries({
@@ -130,9 +117,9 @@ async function setup() {
     buffers.position = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
 
-    gl.enableVertexAttribArray(attributes.position);
+    gl.enableVertexAttribArray(programInfo.attribSetters.a_position.location);
     gl.vertexAttribPointer(
-      attributes.position,
+      programInfo.attribSetters.a_position.location,
       attribs.position.numComponents, // size
       gl.FLOAT, // type
       false, // normalize
@@ -150,9 +137,9 @@ async function setup() {
     buffers.texcoord = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buffers.texcoord);
 
-    gl.enableVertexAttribArray(attributes.texcoord);
+    gl.enableVertexAttribArray(programInfo.attribSetters.a_texcoord.location);
     gl.vertexAttribPointer(
-      attributes.texcoord,
+      programInfo.attribSetters.a_texcoord.location,
       attribs.texcoord.numComponents, // size
       gl.FLOAT, // type
       false, // normalize
@@ -170,9 +157,9 @@ async function setup() {
     buffers.normal = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buffers.normal);
 
-    gl.enableVertexAttribArray(attributes.normal);
+    gl.enableVertexAttribArray(programInfo.attribSetters.a_normal.location);
     gl.vertexAttribPointer(
-      attributes.normal,
+      programInfo.attribSetters.a_normal.location,
       attribs.normal.numComponents, // size
       gl.FLOAT, // type
       false, // normalize
@@ -209,9 +196,9 @@ async function setup() {
     buffers.position = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
 
-    gl.enableVertexAttribArray(attributes.position);
+    gl.enableVertexAttribArray(programInfo.attribSetters.a_position.location);
     gl.vertexAttribPointer(
-      attributes.position,
+      programInfo.attribSetters.a_position.location,
       attribs.position.numComponents, // size
       gl.FLOAT, // type
       false, // normalize
@@ -229,9 +216,9 @@ async function setup() {
     buffers.texcoord = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buffers.texcoord);
 
-    gl.enableVertexAttribArray(attributes.texcoord);
+    gl.enableVertexAttribArray(programInfo.attribSetters.a_texcoord.location);
     gl.vertexAttribPointer(
-      attributes.texcoord,
+      programInfo.attribSetters.a_texcoord.location,
       attribs.texcoord.numComponents, // size
       gl.FLOAT, // type
       false, // normalize
@@ -249,9 +236,9 @@ async function setup() {
     buffers.normal = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buffers.normal);
 
-    gl.enableVertexAttribArray(attributes.normal);
+    gl.enableVertexAttribArray(programInfo.attribSetters.a_normal.location);
     gl.vertexAttribPointer(
-      attributes.normal,
+      programInfo.attribSetters.a_normal.location,
       attribs.normal.numComponents, // size
       gl.FLOAT, // type
       false, // normalize
@@ -281,7 +268,7 @@ async function setup() {
 
   return {
     gl,
-    program, attributes, uniforms,
+    programInfo,
     textures, objects,
     state: {
       fieldOfView: degToRad(45),
@@ -296,7 +283,7 @@ async function setup() {
 function render(app) {
   const {
     gl,
-    program, uniforms,
+    programInfo,
     textures, objects,
     state,
   } = app;
@@ -305,7 +292,7 @@ function render(app) {
   gl.canvas.height = gl.canvas.clientHeight;
   gl.viewport(0, 0, canvas.width, canvas.height);
 
-  gl.useProgram(program);
+  gl.useProgram(programInfo.program);
 
   const cameraMatrix = matrix4.lookAt(state.cameraPosition, [0, 0, 0], [0, 1, 0]);
 
@@ -314,9 +301,9 @@ function render(app) {
     matrix4.inverse(cameraMatrix),
   );
 
-  gl.uniform3f(uniforms.lightDir, ...state.lightDir);
-
-  const textureUnit = 0;
+  twgl.setUniforms(programInfo, {
+    u_lightDir: state.lightDir,
+  });
 
   { // ball
     gl.bindVertexArray(objects.ball.vao);
@@ -326,23 +313,12 @@ function render(app) {
       matrix4.scale(1, 1, 1),
     );
 
-    gl.uniformMatrix4fv(
-      uniforms.matrix,
-      false,
-      matrix4.multiply(viewMatrix, worldMatrix),
-    );
-
-    gl.uniformMatrix4fv(
-      uniforms.normalMatrix,
-      false,
-      matrix4.transpose(matrix4.inverse(worldMatrix)),
-    );
-
-    gl.uniform3f(uniforms.diffuse, 0, 0, 0);
-
-    gl.bindTexture(gl.TEXTURE_2D, textures.steel);
-    gl.activeTexture(gl.TEXTURE0 + textureUnit);
-    gl.uniform1i(uniforms.texture, textureUnit);
+    twgl.setUniforms(programInfo, {
+      u_matrix: matrix4.multiply(viewMatrix, worldMatrix),
+      u_normalMatrix: matrix4.transpose(matrix4.inverse(worldMatrix)),
+      u_diffuse: [0, 0, 0],
+      u_texture: textures.steel,
+    });
 
     gl.drawElements(gl.TRIANGLES, objects.ball.numElements, gl.UNSIGNED_SHORT, 0);
   }
@@ -355,23 +331,12 @@ function render(app) {
       matrix4.scale(10, 1, 10),
     );
 
-    gl.uniformMatrix4fv(
-      uniforms.matrix,
-      false,
-      matrix4.multiply(viewMatrix, worldMatrix),
-    );
-
-    gl.uniformMatrix4fv(
-      uniforms.normalMatrix,
-      false,
-      matrix4.transpose(matrix4.inverse(worldMatrix)),
-    );
-
-    gl.uniform3f(uniforms.diffuse, 0, 0, 0);
-
-    gl.bindTexture(gl.TEXTURE_2D, textures.wood);
-    gl.activeTexture(gl.TEXTURE0 + textureUnit);
-    gl.uniform1i(uniforms.texture, textureUnit);
+    twgl.setUniforms(programInfo, {
+      u_matrix: matrix4.multiply(viewMatrix, worldMatrix),
+      u_normalMatrix: matrix4.transpose(matrix4.inverse(worldMatrix)),
+      u_diffuse: [0, 0, 0],
+      u_texture: textures.wood,
+    });
 
     gl.drawElements(gl.TRIANGLES, objects.ground.numElements, gl.UNSIGNED_SHORT, 0);
   }
