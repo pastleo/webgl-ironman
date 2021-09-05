@@ -119,10 +119,8 @@ async function setup() {
   const objects = {};
 
   { // ball
-    const attribs = twgl.primitives.deindexVertices(
-      twgl.primitives.createSphereVertices(1, 32, 32)
-    );
-    const numElements = attribs.position.length / attribs.position.numComponents;
+    const attribs = twgl.primitives.createSphereVertices(1, 32, 32);
+    const numElements = attribs.indices.length;
     const vao = gl.createVertexArray();
     gl.bindVertexArray(vao);
 
@@ -187,6 +185,11 @@ async function setup() {
       new Float32Array(attribs.normal),
       gl.STATIC_DRAW,
     );
+
+    // indices
+    buffers.indices = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.indices);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, attribs.indices, gl.STATIC_DRAW);
 
     objects.ball = {
       attribs, numElements,
@@ -195,10 +198,8 @@ async function setup() {
   }
 
   { // ground
-    const attribs = twgl.primitives.deindexVertices(
-      twgl.primitives.createPlaneVertices()
-    );
-    const numElements = attribs.position.length / attribs.position.numComponents;
+    const attribs = twgl.primitives.createPlaneVertices()
+    const numElements = attribs.indices.length;
     const vao = gl.createVertexArray();
     gl.bindVertexArray(vao);
 
@@ -263,6 +264,11 @@ async function setup() {
       new Float32Array(attribs.normal),
       gl.STATIC_DRAW,
     );
+
+    // indices
+    buffers.indices = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.indices);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, attribs.indices, gl.STATIC_DRAW);
 
     objects.ground = {
       attribs, numElements,
@@ -338,7 +344,7 @@ function render(app) {
     gl.activeTexture(gl.TEXTURE0 + textureUnit);
     gl.uniform1i(uniforms.texture, textureUnit);
 
-    gl.drawArrays(gl.TRIANGLES, 0, objects.ball.numElements);
+    gl.drawElements(gl.TRIANGLES, objects.ball.numElements, gl.UNSIGNED_SHORT, 0);
   }
 
   { // ground
@@ -367,7 +373,7 @@ function render(app) {
     gl.activeTexture(gl.TEXTURE0 + textureUnit);
     gl.uniform1i(uniforms.texture, textureUnit);
 
-    gl.drawArrays(gl.TRIANGLES, 0, objects.ground.numElements);
+    gl.drawElements(gl.TRIANGLES, objects.ground.numElements, gl.UNSIGNED_SHORT, 0);
   }
 }
 
