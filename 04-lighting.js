@@ -55,6 +55,8 @@ async function setup() {
     throw new Error('Your browser does not support WebGL ext: OES_vertex_array_object')
   }
 
+  twgl.setAttributePrefix('a_');
+
   const programInfo = twgl.createProgramInfo(gl, [vertexShaderSource, fragmentShaderSource]);
 
   const textures = Object.fromEntries(
@@ -107,159 +109,25 @@ async function setup() {
 
   { // ball
     const attribs = twgl.primitives.createSphereVertices(1, 32, 32);
-    const numElements = attribs.indices.length;
-    const vao = gl.createVertexArray();
-    gl.bindVertexArray(vao);
-
-    const buffers = {};
-
-    // a_position
-    buffers.position = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
-
-    gl.enableVertexAttribArray(programInfo.attribSetters.a_position.location);
-    gl.vertexAttribPointer(
-      programInfo.attribSetters.a_position.location,
-      attribs.position.numComponents, // size
-      gl.FLOAT, // type
-      false, // normalize
-      0, // stride
-      0, // offset
-    );
-
-    gl.bufferData(
-      gl.ARRAY_BUFFER,
-      new Float32Array(attribs.position),
-      gl.STATIC_DRAW,
-    );
-
-    // a_texcoord
-    buffers.texcoord = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.texcoord);
-
-    gl.enableVertexAttribArray(programInfo.attribSetters.a_texcoord.location);
-    gl.vertexAttribPointer(
-      programInfo.attribSetters.a_texcoord.location,
-      attribs.texcoord.numComponents, // size
-      gl.FLOAT, // type
-      false, // normalize
-      0, // stride
-      0, // offset
-    );
-
-    gl.bufferData(
-      gl.ARRAY_BUFFER,
-      new Float32Array(attribs.texcoord),
-      gl.STATIC_DRAW,
-    );
-
-    // a_normal
-    buffers.normal = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.normal);
-
-    gl.enableVertexAttribArray(programInfo.attribSetters.a_normal.location);
-    gl.vertexAttribPointer(
-      programInfo.attribSetters.a_normal.location,
-      attribs.normal.numComponents, // size
-      gl.FLOAT, // type
-      false, // normalize
-      0, // stride
-      0, // offset
-    );
-
-    gl.bufferData(
-      gl.ARRAY_BUFFER,
-      new Float32Array(attribs.normal),
-      gl.STATIC_DRAW,
-    );
-
-    // indices
-    buffers.indices = gl.createBuffer();
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.indices);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, attribs.indices, gl.STATIC_DRAW);
+    const bufferInfo = twgl.createBufferInfoFromArrays(gl, attribs);
+    const vao = twgl.createVAOFromBufferInfo(gl, programInfo, bufferInfo);
 
     objects.ball = {
-      attribs, numElements,
-      vao, buffers,
+      attribs,
+      bufferInfo,
+      vao,
     };
   }
 
   { // ground
     const attribs = twgl.primitives.createPlaneVertices()
-    const numElements = attribs.indices.length;
-    const vao = gl.createVertexArray();
-    gl.bindVertexArray(vao);
-
-    const buffers = {};
-
-    // a_position
-    buffers.position = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
-
-    gl.enableVertexAttribArray(programInfo.attribSetters.a_position.location);
-    gl.vertexAttribPointer(
-      programInfo.attribSetters.a_position.location,
-      attribs.position.numComponents, // size
-      gl.FLOAT, // type
-      false, // normalize
-      0, // stride
-      0, // offset
-    );
-
-    gl.bufferData(
-      gl.ARRAY_BUFFER,
-      new Float32Array(attribs.position),
-      gl.STATIC_DRAW,
-    );
-
-    // a_texcoord
-    buffers.texcoord = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.texcoord);
-
-    gl.enableVertexAttribArray(programInfo.attribSetters.a_texcoord.location);
-    gl.vertexAttribPointer(
-      programInfo.attribSetters.a_texcoord.location,
-      attribs.texcoord.numComponents, // size
-      gl.FLOAT, // type
-      false, // normalize
-      0, // stride
-      0, // offset
-    );
-
-    gl.bufferData(
-      gl.ARRAY_BUFFER,
-      new Float32Array(attribs.texcoord),
-      gl.STATIC_DRAW,
-    );
-
-    // a_normal
-    buffers.normal = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.normal);
-
-    gl.enableVertexAttribArray(programInfo.attribSetters.a_normal.location);
-    gl.vertexAttribPointer(
-      programInfo.attribSetters.a_normal.location,
-      attribs.normal.numComponents, // size
-      gl.FLOAT, // type
-      false, // normalize
-      0, // stride
-      0, // offset
-    );
-
-    gl.bufferData(
-      gl.ARRAY_BUFFER,
-      new Float32Array(attribs.normal),
-      gl.STATIC_DRAW,
-    );
-
-    // indices
-    buffers.indices = gl.createBuffer();
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.indices);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, attribs.indices, gl.STATIC_DRAW);
+    const bufferInfo = twgl.createBufferInfoFromArrays(gl, attribs);
+    const vao = twgl.createVAOFromBufferInfo(gl, programInfo, bufferInfo);
 
     objects.ground = {
-      attribs, numElements,
-      vao, buffers,
+      attribs,
+      bufferInfo,
+      vao,
     };
   }
 
@@ -320,7 +188,7 @@ function render(app) {
       u_texture: textures.steel,
     });
 
-    gl.drawElements(gl.TRIANGLES, objects.ball.numElements, gl.UNSIGNED_SHORT, 0);
+    twgl.drawBufferInfo(gl, objects.ball.bufferInfo);
   }
 
   { // ground
@@ -338,7 +206,7 @@ function render(app) {
       u_texture: textures.wood,
     });
 
-    gl.drawElements(gl.TRIANGLES, objects.ground.numElements, gl.UNSIGNED_SHORT, 0);
+    twgl.drawBufferInfo(gl, objects.ground.bufferInfo);
   }
 }
 
