@@ -8,15 +8,20 @@ attribute vec2 a_texcoord;
 attribute vec4 a_normal;
 
 uniform mat4 u_matrix;
+uniform mat4 u_worldMatrix;
 uniform mat4 u_normalMatrix;
+uniform vec3 u_worldViewerPosition;
 
 varying vec2 v_texcoord;
 varying vec3 v_normal;
+varying vec3 v_surfaceToViewer;
 
 void main() {
   gl_Position = u_matrix * a_position;
   v_texcoord = vec2(a_texcoord.x, 1.0 - a_texcoord.y);
   v_normal = (u_normalMatrix * a_normal).xyz;
+  vec3 worldPosition = (u_worldMatrix * a_position).xyz;
+  v_surfaceToViewer = u_worldViewerPosition - worldPosition;
 }
 `;
 
@@ -26,16 +31,28 @@ precision highp float;
 uniform vec3 u_diffuse;
 uniform sampler2D u_texture;
 uniform vec3 u_lightDir;
+uniform vec3 u_specular;
+uniform float u_specularExponent;
 
 varying vec2 v_texcoord;
 varying vec3 v_normal;
+varying vec3 v_surfaceToViewer;
 
 void main() {
   vec3 diffuse = u_diffuse + texture2D(u_texture, v_texcoord).rgb;
   vec3 normal = normalize(v_normal);
   vec3 surfaceToLightDir = normalize(-u_lightDir);
   float diffuseBrightness = clamp(dot(surfaceToLightDir, normal), 0.0, 1.0);
-  gl_FragColor = vec4(diffuse * diffuseBrightness, 1);
+
+  vec3 surfaceToViewerDirection = normalize(v_surfaceToViewer);
+  vec3 halfVector = normalize(surfaceToLightDir + surfaceToViewerDirection);
+  float specularBrightness = clamp(pow(dot(halfVector, normal), u_specularExponent), 0.0, 1.0);
+
+  gl_FragColor = vec4(
+    diffuse * diffuseBrightness +
+    u_specular * specularBrightness,
+    1
+  );
 }
 `;
 
@@ -143,6 +160,8 @@ async function setup() {
       lightDir: [0, -1, 0],
       cameraPosition: [0, 0, 8],
       cameraVelocity: [0, 0, 0],
+      ballSpecularExponent: 40,
+      groundSpecularExponent: 100,
     },
     time: 0,
   };
@@ -170,7 +189,9 @@ function render(app) {
   );
 
   twgl.setUniforms(programInfo, {
+    u_worldViewerPosition: state.cameraPosition,
     u_lightDir: state.lightDir,
+    u_specular: [1, 1, 1],
   });
 
   { // ball
@@ -183,9 +204,11 @@ function render(app) {
 
     twgl.setUniforms(programInfo, {
       u_matrix: matrix4.multiply(viewMatrix, worldMatrix),
+      u_worldMatrix: worldMatrix,
       u_normalMatrix: matrix4.transpose(matrix4.inverse(worldMatrix)),
       u_diffuse: [0, 0, 0],
       u_texture: textures.steel,
+      u_specularExponent: state.ballSpecularExponent,
     });
 
     twgl.drawBufferInfo(gl, objects.ball.bufferInfo);
@@ -201,9 +224,11 @@ function render(app) {
 
     twgl.setUniforms(programInfo, {
       u_matrix: matrix4.multiply(viewMatrix, worldMatrix),
+      u_worldMatrix: worldMatrix,
       u_normalMatrix: matrix4.transpose(matrix4.inverse(worldMatrix)),
       u_diffuse: [0, 0, 0],
       u_texture: textures.wood,
+      u_specularExponent: state.groundSpecularExponent,
     });
 
     twgl.drawBufferInfo(gl, objects.ground.bufferInfo);
@@ -234,6 +259,8 @@ async function main() {
     app.state.lightDir[0] = parseFloat(formData.get('light-dir-x'));
     app.state.lightDir[1] = parseFloat(formData.get('light-dir-y'));
     app.state.lightDir[2] = parseFloat(formData.get('light-dir-z'));
+    app.state.ballSpecularExponent = parseFloat(formData.get('ball-specular-exponent'));
+    app.state.groundSpecularExponent = parseFloat(formData.get('ground-specular-exponent'));
   });
 
   document.addEventListener('keydown', event => {
