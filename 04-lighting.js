@@ -11,10 +11,12 @@ uniform mat4 u_matrix;
 uniform mat4 u_worldMatrix;
 uniform mat4 u_normalMatrix;
 uniform vec3 u_worldViewerPosition;
+uniform vec3 u_worldLightPosition;
 
 varying vec2 v_texcoord;
 varying vec3 v_normal;
 varying vec3 v_surfaceToViewer;
+varying vec3 v_surfaceToLight;
 
 void main() {
   gl_Position = u_matrix * a_position;
@@ -22,6 +24,7 @@ void main() {
   v_normal = (u_normalMatrix * a_normal).xyz;
   vec3 worldPosition = (u_worldMatrix * a_position).xyz;
   v_surfaceToViewer = u_worldViewerPosition - worldPosition;
+  v_surfaceToLight = u_worldLightPosition - worldPosition;
 }
 `;
 
@@ -30,27 +33,29 @@ precision highp float;
 
 uniform vec3 u_diffuse;
 uniform sampler2D u_texture;
-uniform vec3 u_lightDir;
 uniform vec3 u_specular;
 uniform float u_specularExponent;
+uniform vec3 u_emissive;
 
 varying vec2 v_texcoord;
 varying vec3 v_normal;
 varying vec3 v_surfaceToViewer;
+varying vec3 v_surfaceToLight;
 
 void main() {
   vec3 diffuse = u_diffuse + texture2D(u_texture, v_texcoord).rgb;
   vec3 normal = normalize(v_normal);
-  vec3 surfaceToLightDir = normalize(-u_lightDir);
-  float diffuseBrightness = clamp(dot(surfaceToLightDir, normal), 0.0, 1.0);
+  vec3 surfaceToLightDirection = normalize(v_surfaceToLight);
+  float diffuseBrightness = clamp(dot(surfaceToLightDirection, normal), 0.0, 1.0);
 
   vec3 surfaceToViewerDirection = normalize(v_surfaceToViewer);
-  vec3 halfVector = normalize(surfaceToLightDir + surfaceToViewerDirection);
+  vec3 halfVector = normalize(surfaceToLightDirection + surfaceToViewerDirection);
   float specularBrightness = clamp(pow(dot(halfVector, normal), u_specularExponent), 0.0, 1.0);
 
   gl_FragColor = vec4(
     diffuse * diffuseBrightness +
-    u_specular * specularBrightness,
+    u_specular * specularBrightness +
+    u_emissive,
     1
   );
 }
@@ -157,7 +162,7 @@ async function setup() {
     textures, objects,
     state: {
       fieldOfView: degToRad(45),
-      lightDir: [0, -1, 0],
+      lightPosition: [0, 2, 0],
       cameraPosition: [0, 0, 8],
       cameraVelocity: [0, 0, 0],
       ballSpecularExponent: 40,
@@ -190,7 +195,7 @@ function render(app) {
 
   twgl.setUniforms(programInfo, {
     u_worldViewerPosition: state.cameraPosition,
-    u_lightDir: state.lightDir,
+    u_worldLightPosition: state.lightPosition,
     u_specular: [1, 1, 1],
   });
 
@@ -209,6 +214,28 @@ function render(app) {
       u_diffuse: [0, 0, 0],
       u_texture: textures.steel,
       u_specularExponent: state.ballSpecularExponent,
+      u_emissive: [0.15, 0.15, 0.15],
+    });
+
+    twgl.drawBufferInfo(gl, objects.ball.bufferInfo);
+  }
+
+  { // light bulb
+    gl.bindVertexArray(objects.ball.vao);
+
+    const worldMatrix = matrix4.multiply(
+      matrix4.translate(...state.lightPosition),
+      matrix4.scale(0.1, 0.1, 0.1),
+    );
+
+    twgl.setUniforms(programInfo, {
+      u_matrix: matrix4.multiply(viewMatrix, worldMatrix),
+      u_worldMatrix: worldMatrix,
+      u_normalMatrix: matrix4.transpose(matrix4.inverse(worldMatrix)),
+      u_diffuse: [0, 0, 0],
+      u_texture: textures.nil,
+      u_specularExponent: 1000,
+      u_emissive: [1, 1, 0],
     });
 
     twgl.drawBufferInfo(gl, objects.ball.bufferInfo);
@@ -229,6 +256,7 @@ function render(app) {
       u_diffuse: [0, 0, 0],
       u_texture: textures.wood,
       u_specularExponent: state.groundSpecularExponent,
+      u_emissive: [0, 0, 0],
     });
 
     twgl.drawBufferInfo(gl, objects.ground.bufferInfo);
@@ -256,9 +284,9 @@ async function main() {
   controlsForm.addEventListener('input', () => {
     const formData = new FormData(controlsForm);
 
-    app.state.lightDir[0] = parseFloat(formData.get('light-dir-x'));
-    app.state.lightDir[1] = parseFloat(formData.get('light-dir-y'));
-    app.state.lightDir[2] = parseFloat(formData.get('light-dir-z'));
+    app.state.lightPosition[0] = parseFloat(formData.get('light-pos-x'));
+    app.state.lightPosition[1] = parseFloat(formData.get('light-pos-y'));
+    app.state.lightPosition[2] = parseFloat(formData.get('light-pos-z'));
     app.state.ballSpecularExponent = parseFloat(formData.get('ball-specular-exponent'));
     app.state.groundSpecularExponent = parseFloat(formData.get('ground-specular-exponent'));
   });
@@ -309,6 +337,12 @@ function handleKeyDown(app, event) {
     case 'ArrowDown':
       app.state.cameraVelocity[1] = -CAMERA_MOVE_SPEED;
       break;
+    case 'KeyQ':
+      app.state.cameraVelocity[2] = CAMERA_MOVE_SPEED;
+      break;
+    case 'KeyE':
+      app.state.cameraVelocity[2] = -CAMERA_MOVE_SPEED;
+      break;
   }
 }
 
@@ -325,6 +359,10 @@ function handleKeyUp(app, event) {
     case 'KeyS':
     case 'ArrowDown':
       app.state.cameraVelocity[1] = 0;
+      break;
+    case 'KeyQ':
+    case 'KeyE':
+      app.state.cameraVelocity[2] = 0;
       break;
   }
 }
