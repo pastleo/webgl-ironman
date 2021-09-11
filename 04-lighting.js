@@ -14,14 +14,25 @@ uniform vec3 u_worldViewerPosition;
 uniform vec3 u_worldLightPosition;
 
 varying vec2 v_texcoord;
-varying vec3 v_normal;
 varying vec3 v_surfaceToViewer;
 varying vec3 v_surfaceToLight;
+
+varying mat3 v_normalMatrix;
 
 void main() {
   gl_Position = u_matrix * a_position;
   v_texcoord = vec2(a_texcoord.x, 1.0 - a_texcoord.y);
-  v_normal = (u_normalMatrix * a_normal).xyz;
+
+  vec3 normal = normalize((u_normalMatrix * a_normal).xyz);
+  vec3 normalMatrixI = normal.y >= 1.0 ? vec3(1, 0, 0) : normalize(cross(vec3(0, 1, 0), normal));
+  vec3 normalMatrixJ = normalize(cross(normal, normalMatrixI));
+
+  v_normalMatrix = mat3(
+    normalMatrixI,
+    normalMatrixJ,
+    normal
+  );
+
   vec3 worldPosition = (u_worldMatrix * a_position).xyz;
   v_surfaceToViewer = u_worldViewerPosition - worldPosition;
   v_surfaceToLight = u_worldLightPosition - worldPosition;
@@ -32,21 +43,29 @@ const fragmentShaderSource = `
 precision highp float;
 
 uniform vec3 u_diffuse;
-uniform sampler2D u_texture;
 uniform vec3 u_specular;
 uniform float u_specularExponent;
 uniform vec3 u_emissive;
 
+uniform sampler2D u_normalMap;
+
+uniform sampler2D u_diffuseMap;
+uniform sampler2D u_specularMap;
+
 varying vec2 v_texcoord;
-varying vec3 v_normal;
 varying vec3 v_surfaceToViewer;
 varying vec3 v_surfaceToLight;
 
+varying mat3 v_normalMatrix;
+
 void main() {
-  vec3 diffuse = u_diffuse + texture2D(u_texture, v_texcoord).rgb;
-  vec3 normal = normalize(v_normal);
+  vec3 diffuse = u_diffuse + texture2D(u_diffuseMap, v_texcoord).rgb;
+  vec3 normal = texture2D(u_normalMap, v_texcoord).xyz * 2.0 - 1.0;
+  normal = normalize(v_normalMatrix * normal);
   vec3 surfaceToLightDirection = normalize(v_surfaceToLight);
   float diffuseBrightness = clamp(dot(surfaceToLightDirection, normal), 0.0, 1.0);
+
+  vec3 specular = u_specular + texture2D(u_specularMap, v_texcoord).rgb;
 
   vec3 surfaceToViewerDirection = normalize(v_surfaceToViewer);
   vec3 halfVector = normalize(surfaceToLightDirection + surfaceToViewerDirection);
@@ -54,7 +73,7 @@ void main() {
 
   gl_FragColor = vec4(
     diffuse * diffuseBrightness +
-    u_specular * specularBrightness +
+    specular * specularBrightness +
     u_emissive,
     1
   );
@@ -85,6 +104,9 @@ async function setup() {
     await Promise.all(Object.entries({
       wood: 'https://i.imgur.com/SJdQ7Twh.jpg',
       steel: 'https://i.imgur.com/vqKuF5Ih.jpg',
+      woodNormal: 'https://i.imgur.com/f6JzpIUh.jpg',
+      steelNormal: 'https://i.imgur.com/tEOKqebh.jpg',
+      woodSpecularMap: 'https://i.imgur.com/yOgqxOxh.png',
     }).map(async ([name, url]) => {
       const image = await loadImage(url);
       const texture = gl.createTexture();
@@ -125,6 +147,27 @@ async function setup() {
     );
 
     textures.nil = texture;
+  }
+
+  { // null normal texture
+    const texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+
+    gl.texImage2D(
+      gl.TEXTURE_2D,
+      0, // level
+      gl.RGBA, // internalFormat
+      1, // width
+      1, // height
+      0, // border
+      gl.RGBA, // format
+      gl.UNSIGNED_BYTE, // type
+      new Uint8Array([
+        127, 127, 255, 255
+      ])
+    );
+
+    textures.nilNormal = texture;
   }
 
   const objects = {};
@@ -196,7 +239,6 @@ function render(app) {
   twgl.setUniforms(programInfo, {
     u_worldViewerPosition: state.cameraPosition,
     u_worldLightPosition: state.lightPosition,
-    u_specular: [1, 1, 1],
   });
 
   { // ball
@@ -211,8 +253,11 @@ function render(app) {
       u_matrix: matrix4.multiply(viewMatrix, worldMatrix),
       u_worldMatrix: worldMatrix,
       u_normalMatrix: matrix4.transpose(matrix4.inverse(worldMatrix)),
+      u_normalMap: textures.steelNormal,
       u_diffuse: [0, 0, 0],
-      u_texture: textures.steel,
+      u_diffuseMap: textures.steel,
+      u_specular: [1, 1, 1],
+      u_specularMap: textures.nil,
       u_specularExponent: state.ballSpecularExponent,
       u_emissive: [0.15, 0.15, 0.15],
     });
@@ -232,8 +277,11 @@ function render(app) {
       u_matrix: matrix4.multiply(viewMatrix, worldMatrix),
       u_worldMatrix: worldMatrix,
       u_normalMatrix: matrix4.transpose(matrix4.inverse(worldMatrix)),
+      u_normalMap: textures.nilNormal,
       u_diffuse: [0, 0, 0],
-      u_texture: textures.nil,
+      u_diffuseMap: textures.nil,
+      u_specular: [0, 0, 0],
+      u_specularMap: textures.nil,
       u_specularExponent: 1000,
       u_emissive: [1, 1, 0],
     });
@@ -254,7 +302,10 @@ function render(app) {
       u_worldMatrix: worldMatrix,
       u_normalMatrix: matrix4.transpose(matrix4.inverse(worldMatrix)),
       u_diffuse: [0, 0, 0],
-      u_texture: textures.wood,
+      u_diffuseMap: textures.wood,
+      u_normalMap: textures.woodNormal,
+      u_specular: [0, 0, 0],
+      u_specularMap: textures.woodSpecularMap,
       u_specularExponent: state.groundSpecularExponent,
       u_emissive: [0, 0, 0],
     });
