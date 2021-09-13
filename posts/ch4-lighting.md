@@ -19,7 +19,7 @@ CH4: Lighting [WebGL 鐵人]
 
 > 雖然是 CC0，不過筆者還是標注一下好了，這個場景中使用到的 texture 是在 [opengameart.org](https://opengameart.org) 找到的：[Commission - Medieval](https://opengameart.org/content/commission-medieval), [2048² wooden texture](https://opengameart.org/content/2048%C2%B2-wooden-texture)
 
-需要複習『在 WebGL 裡頭使用圖片 (texture) 進行繪製』的話，請參考 [Day 6](https://ithelp.ithome.com.tw/articles/10260664) 的內容，在這個起始點也拿 [Day 14](TBD) 實做的相機控制過來，完整的 live 版本在此：
+需要複習『在 WebGL 裡頭使用圖片 (texture) 進行繪製』的話，請參考 [Day 6](https://ithelp.ithome.com.tw/articles/10260664) 的內容，在這個起始點也拿 [Day 14](https://ithelp.ithome.com.tw/articles/10263716) 實做的相機控制過來，完整的 live 版本在此：
 
 [https://static.pastleo.me/webgl-ironman/commits/2d72d48e66e41a968c65b4870c1cfb8391157710/04-lighting.html](https://static.pastleo.me/webgl-ironman/commits/2d72d48e66e41a968c65b4870c1cfb8391157710/04-lighting.html)
 
@@ -216,9 +216,9 @@ void main() {
 }
 ```
 
-在 12 行使用 [glsl 的內建 function](https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/normalize.xhtml) 計算 `v_normal` 的單位向量，因為從 vertex shader 過來的 varying 經過『補間』處理可能導致不是單位向量，第 13 行計算『表面到光源』的方向，同樣使之為單位向量
+`main()` 的第 2 行使用 [glsl 內建的 normalize function](https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/normalize.xhtml) 計算 `v_normal` 的單位向量，因為從 vertex shader 過來的 varying 經過『補間』處理可能導致不是單位向量，第 13 行計算『表面到光源』的方向，同樣使之為單位向量
 
-第 14 行大概就是本篇最關鍵的一行，如同上方講的使用 [glsl 的內積 function](https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/dot.xhtml) 計算明暗度：`dot(surfaceToLightDir, normal)` ，不過為了避免數值跑到負的，再套上 [glsl 的 clamp](https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/clamp.xhtml) 把範圍限制在 0~1 之間，最後乘上原本的顏色 `color`，把明暗度套用上去，存檔重整後：
+`main()` 的第 4 行大概就是本篇最關鍵的一行，如同上方講的使用 [glsl 的內積 function](https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/dot.xhtml) 計算明暗度：`dot(surfaceToLightDir, normal)` ，不過為了避免數值跑到負的，再套上 [glsl 的 clamp](https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/clamp.xhtml) 把範圍限制在 0~1 之間，最後乘上原本的顏色 `color`，把明暗度套用上去，存檔重整後：
 
 ![directional-light-applied](https://i.imgur.com/H8ct0vR.png)
 
@@ -239,11 +239,11 @@ void main() {
 
 大家好，我是西瓜，你現在看到的是 2021 iThome 鐵人賽『如何在網頁中繪製 3D 場景？從 WebGL 的基礎開始說起』系列文章的第 18 篇文章。本系列文章從 WebGL 基本運作機制以及使用的原理開始介紹，最後建構出繪製 3D、光影效果之網頁。繪製出簡易的 3D 場景後，本章節加入光照效果使得成像更加真實，如果在閱讀本文時覺得有什麼未知的東西被當成已知的，可能可以在[前面的文章中](https://ithelp.ithome.com.tw/users/20140099/ironman/3929)找到相關的內容
 
-筆者在練習寫 WebGL 嘗試自己建立一些 vertice 資料時，因為必須以三角形頂點為單位，輸入的資料會有不少重複部份，顯然有些浪費記憶體；同時，實做出的程式碼中也會有許多重複的部份，最明顯的應該屬 `setup()` 中對於每個物件、每個 attribute 進行 `gl.createBuffer()`, `gl.vertexAttribPointer()` 到 `gl.bufferData()`。在之前 attribute 還不算太多時還可以接受，但是加入 [Day 17](TBD) 為了與光線運算的 normal (法向量) 後，筆者覺得開始覺得是時候正視並處理這兩個問題，因此本篇將使用 indexed element 的功能來減少記憶體的消耗、[TWGL](https://twgljs.org/docs/index.html) 使得重複的程式可以更簡短
+筆者在練習寫 WebGL 嘗試自己建立一些 vertice 資料時，因為必須以三角形頂點為單位，輸入的資料會有不少重複部份，顯然有些浪費記憶體；同時，實做出的程式碼中也會有許多重複的部份，最明顯的應該屬 `setup()` 中對於每個物件、每個 attribute 進行 `gl.createBuffer()`, `gl.vertexAttribPointer()` 到 `gl.bufferData()`。在之前 attribute 還不算太多時還可以接受，但是加入 [Day 17](https://ithelp.ithome.com.tw/articles/10265910) 為了與光線運算的 normal (法向量) 後，筆者覺得開始覺得是時候正視並處理這兩個問題，因此本篇將使用 indexed element 的功能來減少記憶體的消耗、[TWGL](https://twgljs.org/docs/index.html) 使得重複的程式可以更簡短
 
 ### Indexed Element
 
-在 [Day 15](TBD) 有簡短提過這個，不過礙於篇幅可能沒有敘述得很完整，這邊筆者舉一個範例，如果我們要繪製這樣的正方形，各個點的座標以及分成的三角形如下：
+在 [Day 15](https://ithelp.ithome.com.tw/articles/10264281) 有簡短提過這個，不過礙於篇幅可能沒有敘述得很完整，這邊筆者舉一個範例，如果我們要繪製這樣的正方形，各個點的座標以及分成的三角形如下：
 
 ![indexd-element-example](https://static.pastleo.me/assets/210905155406.svg)
 
@@ -550,7 +550,7 @@ async function setup() {
 
 ![specualr-reflection](https://upload.wikimedia.org/wikipedia/commons/1/10/Reflection_angles.svg)
 
-入射角與反射角的角度相同，也就是 `θi` 與 `θr` 相同，在本篇目標擷圖球體中的白色區域，就是光線入射角與反射角角度很接近的地方；而在 fragment shader 內，與計算散射時一樣，與其計算角度，不如利用單位向量的[內積](https://zh.wikipedia.org/wiki/%E7%82%B9%E7%A7%AF)，先計算光線方向反向 `surfaceToLightDirection` 與表面到相機方向 `surfaceToViewerDirection` 的『中間向量』，也就是 `surfaceToLightDirection` 與 `surfaceToViewerDirection` 兩個向量箭頭頂點的中間位置延伸而成的單位向量 `halfVector`，再拿 `halfVector` 與法向量做內積得到反射光的明暗度：
+入射角與反射角的角度相同，也就是 `θi` 與 `θr` 相同，在本篇實做目標擷圖中，其中球體上的白色反光區域，就是光線入射角與反射角角度很接近的地方；而在 fragment shader 內，與計算散射時一樣，與其計算角度，不如利用單位向量的[內積](https://zh.wikipedia.org/wiki/%E7%82%B9%E7%A7%AF)，先計算光線方向反向 `surfaceToLightDirection` 與表面到相機方向 `surfaceToViewerDirection` 的『中間向量』，也就是 `surfaceToLightDirection` 與 `surfaceToViewerDirection` 兩個向量箭頭頂點的中間位置延伸而成的單位向量 `halfVector`，再拿 `halfVector` 與法向量做內積得到反射光的明暗度：
 
 ![](https://static.pastleo.me/assets/day19-specular-calc-210913142412.svg)
 
@@ -1024,9 +1024,9 @@ function render(app) {
 
 ### Normal Map Transform
 
-在 [Day 17](TBD) 中，我們有處理了 vertex attribue 中法向量的旋轉，但是現在得在原本 vertex 法向量的基礎上，再加上一層 normal map，也就是說 normal map 的 +z 要轉換成 vertex 的法向量；舉一個例子，如果有一個 vertex 資料形成之三角形的 normal 為 `[1, 0, 0]`，而一個 fragment shader 取到從 normal map 取到表示的法向量為 `[0, 0, 1]`，必須把這個法向量轉換成 `[1, 0, 0]`
+在 [Day 17](https://ithelp.ithome.com.tw/articles/10265910) 中，我們有處理了 vertex attribue 中法向量的旋轉，但是現在得在原本 vertex 法向量的基礎上，再加上一層 normal map，也就是說 normal map 的 +z 要轉換成 vertex 的法向量；舉一個例子，如果有一個 vertex 資料形成之三角形的 normal 為 `[1, 0, 0]`，而一個 fragment shader 取到從 normal map 取到表示的法向量為 `[0, 0, 1]`，必須把這個法向量轉換成 `[1, 0, 0]`
 
-為了做這樣的 transform，筆者閱讀 [learnopengl.com 的 normal mapping 的文章](https://learnopengl.com/Advanced-Lighting/Normal-Mapping) 後得知這個轉換很像 [Day 14](TBD) 的 `matrix4.lookAt()`，但是不太偏好為所有三角形資料計算、輸入 tangent 以及 bitangents，因此嘗試直接在 vertex shader 內實做傳入 up 為 `[0, 1, 0]` 的 `matrix4.lookAt()`，並且把產生的矩陣以 `varying mat3 v_normalMatrix` 傳送到 fragment shader:
+為了做這樣的 transform，筆者閱讀 [learnopengl.com 的 normal mapping 的文章](https://learnopengl.com/Advanced-Lighting/Normal-Mapping) 後得知這個轉換很像 [Day 14](https://ithelp.ithome.com.tw/articles/10263716) 的 `matrix4.lookAt()`，但是不太偏好為所有三角形資料計算、輸入 tangent 以及 bitangents，因此嘗試直接在 vertex shader 內實做傳入 up 為 `[0, 1, 0]` 的 `matrix4.lookAt()`，並且把產生的矩陣以 `varying mat3 v_normalMatrix` 傳送到 fragment shader:
 
 ```diff=
  varying vec2 v_texcoord;
