@@ -165,6 +165,48 @@ async function setup() {
     textures.nilNormal = texture;
   }
 
+  const framebuffers = {}
+
+  {
+    const framebuffer = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+
+    textures.fb = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, textures.fb);
+
+    const width = 2048;
+    const height = 2048;
+
+    gl.texImage2D(
+      gl.TEXTURE_2D,
+      0, // level
+      gl.RGBA, // internalFormat
+      width,
+      height,
+      0, // border
+      gl.RGBA, // format
+      gl.UNSIGNED_BYTE, // type
+      null, // data
+    );
+
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+    gl.framebufferTexture2D(
+      gl.FRAMEBUFFER,
+      gl.COLOR_ATTACHMENT0, // attachmentPoint
+      gl.TEXTURE_2D,
+      textures.fb,
+      0, // level
+    );
+
+    framebuffers.fb = {
+      framebuffer, width, height,
+    };
+  }
+
   const objects = {};
 
   { // ball
@@ -193,11 +235,12 @@ async function setup() {
 
   gl.enable(gl.CULL_FACE);
   gl.enable(gl.DEPTH_TEST);
+  gl.clearColor(1, 1, 1, 1);
 
   return {
     gl,
     programInfo,
-    textures, objects,
+    textures, framebuffers, objects,
     state: {
       fieldOfView: degToRad(45),
       cameraRotationXY: [degToRad(-45), 0],
@@ -213,14 +256,10 @@ async function setup() {
 function render(app) {
   const {
     gl,
+    framebuffers,
     programInfo,
-    textures, objects,
     state,
   } = app;
-
-  gl.canvas.width = gl.canvas.clientWidth;
-  gl.canvas.height = gl.canvas.clientHeight;
-  gl.viewport(0, 0, canvas.width, canvas.height);
 
   gl.useProgram(programInfo.program);
 
@@ -250,51 +289,69 @@ function render(app) {
     u_ambient: [0.4, 0.4, 0.4],
   });
 
-  { // ball
-    gl.bindVertexArray(objects.ball.vao);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffers.fb.framebuffer);
+  gl.viewport(0, 0, framebuffers.fb.width, framebuffers.fb.height);
+  gl.clear(gl.COLOR_BUFFER_BIT);
 
-    const worldMatrix = matrix4.multiply(
-      matrix4.translate(0, 0, 0),
-      matrix4.scale(1, 1, 1),
-    );
+  renderBall(app, viewMatrix);
 
-    twgl.setUniforms(programInfo, {
-      u_matrix: matrix4.multiply(viewMatrix, worldMatrix),
-      u_worldMatrix: worldMatrix,
-      u_normalMatrix: matrix4.transpose(matrix4.inverse(worldMatrix)),
-      u_normalMap: textures.scaleNormal,
-      u_diffuse: [0, 0, 0],
-      u_diffuseMap: textures.scale,
-      u_specular: [1, 1, 1],
-      u_specularExponent: 40,
-      u_emissive: [0.15, 0.15, 0.15],
-    });
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
-    twgl.drawBufferInfo(gl, objects.ball.bufferInfo);
-  }
+  gl.canvas.width = gl.canvas.clientWidth;
+  gl.canvas.height = gl.canvas.clientHeight;
+  gl.viewport(0, 0, canvas.width, canvas.height);
 
-  { // ground
-    gl.bindVertexArray(objects.ground.vao);
+  renderGround(app, viewMatrix);
+}
 
-    const worldMatrix = matrix4.multiply(
-      matrix4.translate(0, -1, 0),
-      matrix4.scale(10, 1, 10),
-    );
+function renderBall(app, viewMatrix) {
+  const { gl, programInfo, textures, objects } = app;
 
-    twgl.setUniforms(programInfo, {
-      u_matrix: matrix4.multiply(viewMatrix, worldMatrix),
-      u_worldMatrix: worldMatrix,
-      u_normalMatrix: matrix4.transpose(matrix4.inverse(worldMatrix)),
-      u_diffuse: [0, 0, 0],
-      u_diffuseMap: textures.nil,
-      u_normalMap: textures.nilNormal,
-      u_specular: [1, 1, 1],
-      u_specularExponent: 200,
-      u_emissive: [0, 0, 0],
-    });
+  gl.bindVertexArray(objects.ball.vao);
 
-    twgl.drawBufferInfo(gl, objects.ground.bufferInfo);
-  }
+  const worldMatrix = matrix4.multiply(
+    matrix4.translate(0, 0, 0),
+    matrix4.scale(1, 1, 1),
+  );
+
+  twgl.setUniforms(programInfo, {
+    u_matrix: matrix4.multiply(viewMatrix, worldMatrix),
+    u_worldMatrix: worldMatrix,
+    u_normalMatrix: matrix4.transpose(matrix4.inverse(worldMatrix)),
+    u_normalMap: textures.scaleNormal,
+    u_diffuse: [0, 0, 0],
+    u_diffuseMap: textures.scale,
+    u_specular: [1, 1, 1],
+    u_specularExponent: 40,
+    u_emissive: [0.15, 0.15, 0.15],
+  });
+
+  twgl.drawBufferInfo(gl, objects.ball.bufferInfo);
+}
+
+function renderGround(app, viewMatrix) {
+  const { gl, programInfo, textures, objects } = app;
+
+  gl.bindVertexArray(objects.ground.vao);
+
+  const worldMatrix = matrix4.multiply(
+    matrix4.translate(0, -1, 0),
+    matrix4.scale(10, 1, 10),
+  );
+
+  twgl.setUniforms(programInfo, {
+    u_matrix: matrix4.multiply(viewMatrix, worldMatrix),
+    u_worldMatrix: worldMatrix,
+    u_normalMatrix: matrix4.transpose(matrix4.inverse(worldMatrix)),
+    u_diffuse: [0, 0, 0],
+    u_diffuseMap: textures.fb,
+    u_normalMap: textures.nilNormal,
+    u_specular: [1, 1, 1],
+    u_specularExponent: 200,
+    u_emissive: [0, 0, 0],
+  });
+
+  twgl.drawBufferInfo(gl, objects.ground.bufferInfo);
 }
 
 function startLoop(app, now = 0) {
