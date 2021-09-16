@@ -13,10 +13,14 @@ uniform mat4 u_worldMatrix;
 uniform mat4 u_normalMatrix;
 uniform vec3 u_worldViewerPosition;
 
+uniform mat4 u_mirrorMatrix;
+
 varying vec2 v_texcoord;
 varying vec3 v_surfaceToViewer;
 
 varying mat3 v_normalMatrix;
+
+varying vec4 v_mirrorTexcoord;
 
 void main() {
   gl_Position = u_matrix * a_position;
@@ -32,8 +36,10 @@ void main() {
     normal
   );
 
-  vec3 worldPosition = (u_worldMatrix * a_position).xyz;
-  v_surfaceToViewer = u_worldViewerPosition - worldPosition;
+  vec4 worldPosition = u_worldMatrix * a_position;
+  v_surfaceToViewer = u_worldViewerPosition - worldPosition.xyz;
+
+  v_mirrorTexcoord = u_mirrorMatrix * worldPosition;
 }
 `;
 
@@ -51,15 +57,20 @@ uniform vec3 u_emissive;
 uniform sampler2D u_normalMap;
 uniform sampler2D u_diffuseMap;
 
+uniform bool u_useMirrorTexcoord;
+
 varying vec2 v_texcoord;
 varying vec3 v_surfaceToViewer;
 
 varying mat3 v_normalMatrix;
 
+varying vec4 v_mirrorTexcoord;
+
 void main() {
-  vec3 diffuse = u_diffuse + texture2D(u_diffuseMap, v_texcoord).rgb;
+  vec2 texcoord = u_useMirrorTexcoord ? (v_mirrorTexcoord.xy / v_mirrorTexcoord.w) * 0.5 + 0.5 : v_texcoord;
+  vec3 diffuse = u_diffuse + texture2D(u_diffuseMap, texcoord).rgb;
   vec3 ambient = u_ambient * diffuse;
-  vec3 normal = texture2D(u_normalMap, v_texcoord).xyz * 2.0 - 1.0;
+  vec3 normal = texture2D(u_normalMap, texcoord).xyz * 2.0 - 1.0;
   normal = normalize(v_normalMatrix * normal);
   vec3 surfaceToLightDirection = normalize(-u_lightDirection);
   float diffuseBrightness = clamp(dot(surfaceToLightDirection, normal), 0.0, 1.0);
@@ -165,47 +176,9 @@ async function setup() {
     textures.nilNormal = texture;
   }
 
-  const framebuffers = {}
-
-  {
-    const framebuffer = gl.createFramebuffer();
-    gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
-
-    textures.fb = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, textures.fb);
-
-    const width = 2048;
-    const height = 2048;
-
-    gl.texImage2D(
-      gl.TEXTURE_2D,
-      0, // level
-      gl.RGBA, // internalFormat
-      width,
-      height,
-      0, // border
-      gl.RGBA, // format
-      gl.UNSIGNED_BYTE, // type
-      null, // data
-    );
-
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-
-    gl.framebufferTexture2D(
-      gl.FRAMEBUFFER,
-      gl.COLOR_ATTACHMENT0, // attachmentPoint
-      gl.TEXTURE_2D,
-      textures.fb,
-      0, // level
-    );
-
-    framebuffers.fb = {
-      framebuffer, width, height,
-    };
-  }
+  const framebuffers = {};
+  framebuffers.mirror = twgl.createFramebufferInfo(gl, null, 2048, 2048);
+  textures.mirror = framebuffers.mirror.attachments[0];
 
   const objects = {};
 
@@ -263,6 +236,18 @@ function render(app) {
 
   gl.useProgram(programInfo.program);
 
+  const mirrorCameraMatrix = matrix4.multiply(
+    matrix4.translate(...state.cameraViewing),
+    matrix4.yRotate(state.cameraRotationXY[1]),
+    matrix4.xRotate(-state.cameraRotationXY[0]),
+    matrix4.translate(0, 0, state.cameraDistance),
+  );
+
+  const mirrorViewMatrix = matrix4.multiply(
+    matrix4.perspective(state.fieldOfView, gl.canvas.width / gl.canvas.height, 0.1, 2000),
+    matrix4.inverse(mirrorCameraMatrix),
+  );
+
   const cameraMatrix = matrix4.multiply(
     matrix4.translate(...state.cameraViewing),
     matrix4.yRotate(state.cameraRotationXY[1]),
@@ -289,11 +274,10 @@ function render(app) {
     u_ambient: [0.4, 0.4, 0.4],
   });
 
-  gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffers.fb.framebuffer);
-  gl.viewport(0, 0, framebuffers.fb.width, framebuffers.fb.height);
-  gl.clear(gl.COLOR_BUFFER_BIT);
+  twgl.bindFramebufferInfo(gl, framebuffers.mirror);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-  renderBall(app, viewMatrix);
+  renderBall(app, mirrorViewMatrix);
 
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
@@ -301,7 +285,8 @@ function render(app) {
   gl.canvas.height = gl.canvas.clientHeight;
   gl.viewport(0, 0, canvas.width, canvas.height);
 
-  renderGround(app, viewMatrix);
+  renderBall(app, viewMatrix);
+  renderGround(app, viewMatrix, mirrorViewMatrix);
 }
 
 function renderBall(app, viewMatrix) {
@@ -310,7 +295,7 @@ function renderBall(app, viewMatrix) {
   gl.bindVertexArray(objects.ball.vao);
 
   const worldMatrix = matrix4.multiply(
-    matrix4.translate(0, 0, 0),
+    matrix4.translate(0, 1, 0),
     matrix4.scale(1, 1, 1),
   );
 
@@ -329,29 +314,33 @@ function renderBall(app, viewMatrix) {
   twgl.drawBufferInfo(gl, objects.ball.bufferInfo);
 }
 
-function renderGround(app, viewMatrix) {
+function renderGround(app, viewMatrix, mirrorViewMatrix) {
   const { gl, programInfo, textures, objects } = app;
 
   gl.bindVertexArray(objects.ground.vao);
 
-  const worldMatrix = matrix4.multiply(
-    matrix4.translate(0, -1, 0),
-    matrix4.scale(10, 1, 10),
-  );
+  const worldMatrix = matrix4.scale(10, 1, 10);
 
   twgl.setUniforms(programInfo, {
     u_matrix: matrix4.multiply(viewMatrix, worldMatrix),
     u_worldMatrix: worldMatrix,
     u_normalMatrix: matrix4.transpose(matrix4.inverse(worldMatrix)),
     u_diffuse: [0, 0, 0],
-    u_diffuseMap: textures.fb,
+    u_diffuseMap: textures.mirror,
     u_normalMap: textures.nilNormal,
     u_specular: [1, 1, 1],
     u_specularExponent: 200,
     u_emissive: [0, 0, 0],
+
+    u_useMirrorTexcoord: true,
+    u_mirrorMatrix: mirrorViewMatrix,
   });
 
   twgl.drawBufferInfo(gl, objects.ground.bufferInfo);
+
+  twgl.setUniforms(programInfo, {
+    u_useMirrorTexcoord: false,
+  });
 }
 
 function startLoop(app, now = 0) {
