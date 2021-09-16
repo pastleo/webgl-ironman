@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>06-boat-ocean</title>
+  <meta key="description" name="Description" content="WebGL 鐵人 CH6 範例: 一艘帆船，在一片看不到邊的海面上，天氣晴朗。">
+  <meta key="viewport" name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta key="og:image" name="og:image" content="https://i.imgur.com/UWNFuwf.png">
+</head>
+<style>
+  html, body {
+    margin: 0;
+    touch-action: none;
+    height: 100%;
+  }
+  #canvas {
+    width: 100%;
+    height: 100%;
+  }
+  #controls {
+    position: fixed;
+    top: 0;
+    right: 0;
+    margin: 1rem;
+  }
+  .py-1 {
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+  }
+</style>
+<body>
+  <canvas id="canvas"></canvas>
+  <form id="controls">
+    <label for="resolution-ratio">解析度</label>
+    <select id="resolution-ratio" name="resolution-ratio">
+      <option value="0.75">低</option>
+      <option value="1" selected>普通</option>
+      <option id="resolution-ratio-retina" value="1" disabled>Retina</option>
+    </select>
+  </form>
+  <script type="module" src="06-boat-ocean.js"></script>
+</body>
+</html>
