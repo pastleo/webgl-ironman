@@ -21,6 +21,7 @@ varying vec3 v_surfaceToViewer;
 varying mat3 v_normalMatrix;
 
 varying vec4 v_mirrorTexcoord;
+varying float v_depth;
 
 void main() {
   gl_Position = u_matrix * a_position;
@@ -40,6 +41,7 @@ void main() {
   v_surfaceToViewer = u_worldViewerPosition - worldPosition.xyz;
 
   v_mirrorTexcoord = u_mirrorMatrix * worldPosition;
+  v_depth = gl_Position.z / gl_Position.w * 0.5 + 0.5;
 }
 `;
 
@@ -91,6 +93,16 @@ void main() {
 }
 `;
 
+const depthFragmentShaderSource = `
+precision highp float;
+
+varying float v_depth;
+
+void main() {
+  gl_FragColor = vec4(v_depth, v_depth, v_depth, 1);
+}
+`;
+
 async function setup() {
   const canvas = document.getElementById('canvas');
   const gl = canvas.getContext('webgl');
@@ -105,9 +117,15 @@ async function setup() {
     throw new Error('Your browser does not support WebGL ext: OES_vertex_array_object')
   }
 
+  const webglDepthTexExt = gl.getExtension('WEBGL_depth_texture');
+  if (!webglDepthTexExt) {
+    throw new Error('Your browser does not support WebGL ext: WEBGL_depth_texture')
+  }
+
   twgl.setAttributePrefix('a_');
 
   const programInfo = twgl.createProgramInfo(gl, [vertexShaderSource, fragmentShaderSource]);
+  const depthProgramInfo = twgl.createProgramInfo(gl, [vertexShaderSource, depthFragmentShaderSource]);
 
   const textures = Object.fromEntries(
     await Promise.all(Object.entries({
@@ -180,6 +198,12 @@ async function setup() {
   framebuffers.mirror = twgl.createFramebufferInfo(gl, null, 2048, 2048);
   textures.mirror = framebuffers.mirror.attachments[0];
 
+  framebuffers.lightProjection = twgl.createFramebufferInfo(gl, [{
+    attachmentPoint: gl.DEPTH_ATTACHMENT,
+    format: gl.DEPTH_COMPONENT,
+  }], 2048, 2048);
+  textures.lightProjection = framebuffers.lightProjection.attachments[0];
+
   const objects = {};
 
   { // ball
@@ -212,7 +236,7 @@ async function setup() {
 
   return {
     gl,
-    programInfo,
+    programInfo, depthProgramInfo,
     textures, framebuffers, objects,
     state: {
       fieldOfView: degToRad(45),
@@ -230,11 +254,28 @@ function render(app) {
   const {
     gl,
     framebuffers,
-    programInfo,
+    programInfo, depthProgramInfo,
     state,
   } = app;
 
   gl.useProgram(programInfo.program);
+
+  const lightProjectionViewMatrix = matrix4.multiply(
+    matrix4.translate(1, -1, 0),
+    matrix4.projection(20, 20, 10),
+    [ // shearing
+      1, 0, 0, 0,
+      0, 1, 0, 0,
+      0, Math.tan(state.lightRotationXY[0]), 1, 0,
+      0, 0, 0, 1,
+    ],
+    matrix4.inverse(
+      matrix4.multiply(
+        matrix4.yRotate(state.lightRotationXY[1]),
+        matrix4.xRotate(degToRad(90)),
+      )
+    ),
+  );
 
   const mirrorCameraMatrix = matrix4.multiply(
     matrix4.translate(...state.cameraViewing),
@@ -277,7 +318,7 @@ function render(app) {
   twgl.bindFramebufferInfo(gl, framebuffers.mirror);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-  renderBall(app, mirrorViewMatrix);
+  renderBall(app, mirrorViewMatrix, programInfo);
 
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
@@ -285,12 +326,14 @@ function render(app) {
   gl.canvas.height = gl.canvas.clientHeight;
   gl.viewport(0, 0, canvas.width, canvas.height);
 
-  renderBall(app, viewMatrix);
-  renderGround(app, viewMatrix, mirrorViewMatrix);
+  gl.useProgram(depthProgramInfo.program);
+
+  renderBall(app, lightProjectionViewMatrix, depthProgramInfo);
+  renderGround(app, lightProjectionViewMatrix, mirrorViewMatrix, depthProgramInfo);
 }
 
-function renderBall(app, viewMatrix) {
-  const { gl, programInfo, textures, objects } = app;
+function renderBall(app, viewMatrix, programInfo) {
+  const { gl, textures, objects } = app;
 
   gl.bindVertexArray(objects.ball.vao);
 
@@ -314,8 +357,8 @@ function renderBall(app, viewMatrix) {
   twgl.drawBufferInfo(gl, objects.ball.bufferInfo);
 }
 
-function renderGround(app, viewMatrix, mirrorViewMatrix) {
-  const { gl, programInfo, textures, objects } = app;
+function renderGround(app, viewMatrix, mirrorViewMatrix, programInfo) {
+  const { gl, textures, objects } = app;
 
   gl.bindVertexArray(objects.ground.vao);
 
