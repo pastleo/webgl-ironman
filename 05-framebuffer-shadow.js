@@ -14,6 +14,7 @@ uniform mat4 u_normalMatrix;
 uniform vec3 u_worldViewerPosition;
 
 uniform mat4 u_mirrorMatrix;
+uniform mat4 u_lightProjectionMatrix;
 
 varying vec2 v_texcoord;
 varying vec3 v_surfaceToViewer;
@@ -22,6 +23,7 @@ varying mat3 v_normalMatrix;
 
 varying vec4 v_mirrorTexcoord;
 varying float v_depth;
+varying vec4 v_lightProjection;
 
 void main() {
   gl_Position = u_matrix * a_position;
@@ -42,6 +44,7 @@ void main() {
 
   v_mirrorTexcoord = u_mirrorMatrix * worldPosition;
   v_depth = gl_Position.z / gl_Position.w * 0.5 + 0.5;
+  v_lightProjection = u_lightProjectionMatrix * worldPosition;
 }
 `;
 
@@ -60,6 +63,7 @@ uniform sampler2D u_normalMap;
 uniform sampler2D u_diffuseMap;
 
 uniform bool u_useMirrorTexcoord;
+uniform sampler2D u_lightProjectionMap;
 
 varying vec2 v_texcoord;
 varying vec3 v_surfaceToViewer;
@@ -67,6 +71,7 @@ varying vec3 v_surfaceToViewer;
 varying mat3 v_normalMatrix;
 
 varying vec4 v_mirrorTexcoord;
+varying vec4 v_lightProjection;
 
 void main() {
   vec2 texcoord = u_useMirrorTexcoord ? (v_mirrorTexcoord.xy / v_mirrorTexcoord.w) * 0.5 + 0.5 : v_texcoord;
@@ -80,6 +85,15 @@ void main() {
   vec3 surfaceToViewerDirection = normalize(v_surfaceToViewer);
   vec3 halfVector = normalize(surfaceToLightDirection + surfaceToViewerDirection);
   float specularBrightness = clamp(pow(dot(halfVector, normal), u_specularExponent), 0.0, 1.0);
+
+  vec2 lightProjectionCoord = v_lightProjection.xy / v_lightProjection.w * 0.5 + 0.5;
+  float lightToSurfaceDepth = v_lightProjection.z / v_lightProjection.w * 0.5 + 0.5;
+  float lightProjectedDepth = texture2D(u_lightProjectionMap, lightProjectionCoord).r;
+
+  float occulusion = lightToSurfaceDepth > 0.01 + lightProjectedDepth ? 0.5 : 0.0;
+
+  diffuseBrightness *= 1.0 - occulusion;
+  specularBrightness *= 1.0 - occulusion * 2.0;
 
   gl_FragColor = vec4(
     clamp(
@@ -253,12 +267,10 @@ async function setup() {
 function render(app) {
   const {
     gl,
-    framebuffers,
+    framebuffers, textures,
     programInfo, depthProgramInfo,
     state,
   } = app;
-
-  gl.useProgram(programInfo.program);
 
   const lightProjectionViewMatrix = matrix4.multiply(
     matrix4.translate(1, -1, 0),
@@ -309,16 +321,31 @@ function render(app) {
     [0, -1, 0, 1],
   ).slice(0, 3);
 
+  { // lightProjection
+    gl.useProgram(depthProgramInfo.program);
+
+    twgl.bindFramebufferInfo(gl, framebuffers.lightProjection);
+    gl.clear(gl.DEPTH_BUFFER_BIT);
+
+    renderBall(app, lightProjectionViewMatrix, depthProgramInfo);
+    renderGround(app, lightProjectionViewMatrix, mirrorViewMatrix, depthProgramInfo);
+  }
+
+  gl.useProgram(programInfo.program);
   twgl.setUniforms(programInfo, {
     u_worldViewerPosition: cameraMatrix.slice(12, 15),
     u_lightDirection: lightDirection,
     u_ambient: [0.4, 0.4, 0.4],
+    u_lightProjectionMatrix: lightProjectionViewMatrix,
+    u_lightProjectionMap: textures.lightProjection,
   });
 
-  twgl.bindFramebufferInfo(gl, framebuffers.mirror);
-  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  { // mirror
+    twgl.bindFramebufferInfo(gl, framebuffers.mirror);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-  renderBall(app, mirrorViewMatrix, programInfo);
+    renderBall(app, mirrorViewMatrix, programInfo);
+  }
 
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
@@ -326,10 +353,8 @@ function render(app) {
   gl.canvas.height = gl.canvas.clientHeight;
   gl.viewport(0, 0, canvas.width, canvas.height);
 
-  gl.useProgram(depthProgramInfo.program);
-
-  renderBall(app, lightProjectionViewMatrix, depthProgramInfo);
-  renderGround(app, lightProjectionViewMatrix, mirrorViewMatrix, depthProgramInfo);
+  renderBall(app, viewMatrix, programInfo);
+  renderGround(app, viewMatrix, mirrorViewMatrix, programInfo);
 }
 
 function renderBall(app, viewMatrix, programInfo) {
