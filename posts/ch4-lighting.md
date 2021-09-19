@@ -966,7 +966,7 @@ function render(app) {
 
 ---
 
-## Day 21: Normal & Specular Map
+## Day 21: Normal Map
 
 大家好，我是西瓜，你現在看到的是 2021 iThome 鐵人賽『如何在網頁中繪製 3D 場景？從 WebGL 的基礎開始說起』系列文章的第 21 篇文章。本系列文章從 WebGL 基本運作機制以及使用的原理開始介紹，最後建構出繪製 3D、光影效果之網頁。繪製出簡易的 3D 場景後，本章節加入光照效果使得成像更加真實，如果在閱讀本文時覺得有什麼未知的東西被當成已知的，可能可以在[前面的文章中](https://ithelp.ithome.com.tw/users/20140099/ironman/3929)找到相關的內容
 

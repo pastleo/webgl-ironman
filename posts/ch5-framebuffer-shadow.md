@@ -20,7 +20,7 @@ CH5: Framebuffer & Shadow [WebGL 鐵人]
 * [github.com/pastleo/webgl-ironman/commit/c175474](https://github.com/pastleo/webgl-ironman/commit/c175474f41e96622bd6a6f4b38fdb7edd8f2abf0)
 * [live 版本](https://static.pastleo.me/webgl-ironman/commits/c175474f41e96622bd6a6f4b38fdb7edd8f2abf0/05-framebuffer-shadow.html)
 
-可以發現點光源改回平行光了，而且會隨著時間改變方向，然後地板變成全黑的了，因為這是本章接下來要實做的
+可以發現點光源改回平行光，而且會隨著時間改變方向，然後地板變成全黑的了，因為這是本章接下來要實做的
 
 ### Framebuffer 是什麼
 
@@ -440,7 +440,7 @@ const mirrorViewMatrix = matrix4.multiply(
 
 大家好，我是西瓜，你現在看到的是 2021 iThome 鐵人賽『如何在網頁中繪製 3D 場景？從 WebGL 的基礎開始說起』系列文章的第 24 篇文章。本系列文章從 WebGL 基本運作機制以及使用的原理開始介紹，最後建構出繪製 3D、光影效果之網頁。本章節講述的是如何透過 framebuffer 使 WebGL 預先計算資料到 texture，並透過這些預計算的資料製作鏡面、陰影效果，如果在閱讀本文時覺得有什麼未知的東西被當成已知的，可能可以在[前面的文章中](https://ithelp.ithome.com.tw/users/20140099/ironman/3929)找到相關的內容
 
-有了 framebuffer 的幫助，我們可以動用 GPU 的力量事先運算，在正式繪製畫面時使用。繼鏡面完成之後，根據 [Day 22](TBD) 所說，另一個 framebuffer 的應用是陰影，接下來就來介紹如何製作出陰影效果
+有了 framebuffer 的幫助，我們可以動用 GPU 的力量事先運算，在正式繪製畫面時使用。繼鏡面完成之後，根據 [Day 22](https://ithelp.ithome.com.tw/articles/10269682) 所說，另一個 framebuffer 的應用是陰影，接下來就來介紹如何製作出陰影效果
 
 ### 如何『拍攝』深度照片
 
@@ -650,7 +650,7 @@ function render(app) {
 
 大家好，我是西瓜，你現在看到的是 2021 iThome 鐵人賽『如何在網頁中繪製 3D 場景？從 WebGL 的基礎開始說起』系列文章的第 25 篇文章。本系列文章從 WebGL 基本運作機制以及使用的原理開始介紹，最後建構出繪製 3D、光影效果之網頁。本章節講述的是如何透過 framebuffer 使 WebGL 預先計算資料到 texture，並透過這些預計算的資料製作鏡面、陰影效果，如果在閱讀本文時覺得有什麼未知的東西被當成已知的，可能可以在[前面的文章中](https://ithelp.ithome.com.tw/users/20140099/ironman/3929)找到相關的內容
 
-在 [Day 24](TBD) 渲染好深度並繪製到畫面上，可以看到中間一顆球的輪廓，並且在其頂部的地方顏色深度更深，表示更接近深度投影的投影面，接下來讓這個拍攝深度的目標移動到 framebuffer/texture 去，並且在渲染給使用者時使用
+在 [Day 24](https://ithelp.ithome.com.tw/articles/10271101) 渲染好深度並繪製到畫面上，可以看到中間一顆球的輪廓，並且在其頂部的地方顏色深度更深，表示更接近深度投影的投影面，接下來讓這個拍攝深度的目標移動到 framebuffer/texture 去，並且在渲染給使用者時使用
 
 ### 移動拍攝深度資訊的目標至 framebuffer
 
@@ -745,7 +745,7 @@ function render(app) {
 
 ![using-light-projection](https://static.pastleo.me/assets/day25-using-light-projection-210919171329.svg)
 
-經過光源投影之後，B 點上的深度來自 A 點，如果從 C 進行光源投影同樣會到達 B 點的位置，但是深度將會比較深，我們可以利用這一點來檢查是否在陰影下，把 C 點投影到 B 點的原理其實跟 [Day 23](TBD) 鏡面計算 texture 位置一樣，將在 fragment shader 中得到的表面位置進行 framebuffer 的 view matrix 轉換，也就是 `lightProjectionViewMatrix`
+經過光源投影之後，B 點上的深度來自 A 點，如果從 C 進行光源投影同樣會到達 B 點的位置，但是深度將會比較深，我們可以利用這一點來檢查是否在陰影下，把 C 點投影到 B 點的原理其實跟 [Day 23](https://ithelp.ithome.com.tw/articles/10270429) 鏡面計算 texture 位置一樣，將在 fragment shader 中得到的表面位置進行 framebuffer 的 view matrix 轉換，也就是 `lightProjectionViewMatrix`
 
 把光源投影的 view 矩陣用名為 `u_lightProjectionMatrix` 的 uniform 傳入，並且在 vertex shader 中 transform 成 `v_lightProjection` 投影後的位置：
 
