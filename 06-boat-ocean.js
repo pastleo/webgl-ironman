@@ -1,4 +1,5 @@
 import * as twgl from 'https://unpkg.com/twgl.js@4.19.2/dist/4.x/twgl-full.module.js';
+import * as WebGLObjLoader from './vendor/webgl-obj-loader.esm.js';
 import listenToInputs, { update as inputUpdate } from './lib/input.js';
 import { degToRad } from './lib/utils.js';
 import { matrix4 } from './lib/matrix.js';
@@ -260,6 +261,8 @@ async function setup() {
     };
   }
 
+  objects.boat = await loadBoatModel(gl, textures, programInfo);
+
   gl.enable(gl.CULL_FACE);
   gl.enable(gl.DEPTH_TEST);
 
@@ -340,7 +343,6 @@ function render(app) {
   const globalUniforms = {
     u_worldViewerPosition: cameraMatrix.slice(12, 15),
     u_lightDirection: lightDirection,
-    u_ambient: [0.4, 0.4, 0.4],
     u_lightProjectionMatrix: lightProjectionViewMatrix,
     u_lightProjectionMap: textures.lightProjection,
   }
@@ -397,6 +399,7 @@ function renderBall(app, viewMatrix, programInfo) {
     u_specular: [1, 1, 1],
     u_specularExponent: 40,
     u_emissive: [0.15, 0.15, 0.15],
+    u_ambient: [0.4, 0.4, 0.4],
   });
 
   twgl.drawBufferInfo(gl, objects.ball.bufferInfo);
@@ -419,6 +422,7 @@ function renderOcean(app, viewMatrix, reflectionMatrix, programInfo) {
     u_specular: [1, 1, 1],
     u_specularExponent: 200,
     u_emissive: [0, 0, 0],
+    u_ambient: [0.4, 0.4, 0.4],
 
     u_reflectionMatrix: reflectionMatrix,
     u_time: time / 1000,
@@ -461,3 +465,47 @@ async function main() {
   startLoop(app);
 }
 main();
+
+async function loadBoatModel(gl, textures, programInfo) {
+  const { boatModel } = await WebGLObjLoader.downloadModels([{
+    name: 'boatModel',
+    obj: './assets/my-first-boat.obj',
+    mtl: true,
+  }]);
+
+  const sharedBufferInfo = twgl.createBufferInfoFromArrays(gl, {
+    position: { numComponents: 3, data: boatModel.vertices },
+    texcoord: { numComponents: 2, data: boatModel.textures },
+    normal: { numComponents: 3, data: boatModel.vertexNormals },
+  });
+
+  return boatModel.indicesPerMaterial.map((indices, mtlIdx) => {
+    const material = boatModel.materialsByIndex[mtlIdx];
+
+    const bufferInfo = twgl.createBufferInfoFromArrays(gl, {
+      indices,
+    }, sharedBufferInfo);
+
+    let u_diffuseMap = textures.nil;
+    if (material.mapDiffuse.texture) {
+      u_diffuseMap = twgl.createTexture(gl, {
+        wrapS: gl.CLAMP_TO_EDGE, wrapT: gl.CLAMP_TO_EDGE,
+        min: gl.LINEAR_MIPMAP_LINEAR,
+        src: material.mapDiffuse.texture,
+      });
+    }
+
+    return {
+      bufferInfo,
+      vao: twgl.createVAOFromBufferInfo(gl, programInfo, bufferInfo),
+      uniforms: {
+        u_diffuse: material.diffuse,
+        u_diffuseMap,
+        u_specular: material.specular,
+        u_specularExponent: material.specularExponent,
+        u_emissive: material.emissive,
+        u_ambient: [0.6, 0.6, 0.6],
+      },
+    }
+  });
+}
