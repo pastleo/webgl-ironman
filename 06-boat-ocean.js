@@ -215,6 +215,18 @@ async function setup() {
     },
     nil: { src: [0, 0, 0, 255] },
     nilNormal: { src: [127, 127, 255, 255] },
+    skybox: {
+      target: gl.TEXTURE_CUBE_MAP,
+      src: [
+        'https://i.imgur.com/vYEUTTe.png',
+        'https://i.imgur.com/CQYYFPo.png',
+        'https://i.imgur.com/Ol4h1f1.png',
+        'https://i.imgur.com/qYV0zv9.png',
+        'https://i.imgur.com/uapdS7d.png',
+        'https://i.imgur.com/MPL3hRV.png',
+      ],
+      crossOrigin: true,
+    },
   });
 
   const framebuffers = {};
