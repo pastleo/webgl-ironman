@@ -209,14 +209,6 @@ async function setup() {
   const oceanProgramInfo = twgl.createProgramInfo(gl, [vertexShaderSource, oceanFragmentShaderSource]);
 
   const textures = twgl.createTextures(gl, {
-    scale: {
-      src: 'https://i.imgur.com/IuTNc8Ah.jpg',
-      min: gl.LINEAR_MIPMAP_LINEAR, mag: gl.LINEAR, crossOrigin: true,
-    },
-    scaleNormal: {
-      src: 'https://i.imgur.com/kWO2b7jh.jpg',
-      min: gl.LINEAR_MIPMAP_LINEAR, mag: gl.LINEAR, crossOrigin: true,
-    },
     oceanNormal: {
       src: 'https://i.imgur.com/eCBtjB8h.jpg',
       min: gl.LINEAR_MIPMAP_LINEAR, mag: gl.LINEAR, crossOrigin: true,
@@ -236,18 +228,6 @@ async function setup() {
   textures.lightProjection = framebuffers.lightProjection.attachments[0];
 
   const objects = {};
-
-  { // ball
-    const attribs = twgl.primitives.createSphereVertices(1, 32, 32);
-    const bufferInfo = twgl.createBufferInfoFromArrays(gl, attribs);
-    const vao = twgl.createVAOFromBufferInfo(gl, programInfo, bufferInfo);
-
-    objects.ball = {
-      attribs,
-      bufferInfo,
-      vao,
-    };
-  }
 
   { // plane
     const attribs = twgl.primitives.createPlaneVertices()
@@ -353,7 +333,7 @@ function render(app) {
     twgl.bindFramebufferInfo(gl, framebuffers.lightProjection);
     gl.clear(gl.DEPTH_BUFFER_BIT);
 
-    renderBall(app, lightProjectionViewMatrix, depthProgramInfo);
+    renderBoat(app, lightProjectionViewMatrix, depthProgramInfo);
     renderOcean(app, lightProjectionViewMatrix, reflectionMatrix, depthProgramInfo);
   }
 
@@ -364,7 +344,7 @@ function render(app) {
     twgl.bindFramebufferInfo(gl, framebuffers.reflection);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    renderBall(app, reflectionMatrix, programInfo);
+    renderBoat(app, reflectionMatrix, programInfo);
   }
 
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -372,20 +352,19 @@ function render(app) {
   twgl.resizeCanvasToDisplaySize(gl.canvas, state.resolutionRatio);
   gl.viewport(0, 0, canvas.width, canvas.height);
 
-  renderBall(app, viewMatrix, programInfo);
+  renderBoat(app, viewMatrix, programInfo);
 
   gl.useProgram(oceanProgramInfo.program);
   twgl.setUniforms(oceanProgramInfo, globalUniforms);
   renderOcean(app, viewMatrix, reflectionMatrix, oceanProgramInfo);
 }
 
-function renderBall(app, viewMatrix, programInfo) {
+function renderBoat(app, viewMatrix, programInfo) {
   const { gl, textures, objects } = app;
 
-  gl.bindVertexArray(objects.ball.vao);
-
   const worldMatrix = matrix4.multiply(
-    matrix4.translate(0, 1, 0),
+    matrix4.yRotate(degToRad(45)),
+    matrix4.translate(0, 0, 0),
     matrix4.scale(1, 1, 1),
   );
 
@@ -393,16 +372,14 @@ function renderBall(app, viewMatrix, programInfo) {
     u_matrix: matrix4.multiply(viewMatrix, worldMatrix),
     u_worldMatrix: worldMatrix,
     u_normalMatrix: matrix4.transpose(matrix4.inverse(worldMatrix)),
-    u_normalMap: textures.scaleNormal,
-    u_diffuse: [0, 0, 0],
-    u_diffuseMap: textures.scale,
-    u_specular: [1, 1, 1],
-    u_specularExponent: 40,
-    u_emissive: [0.15, 0.15, 0.15],
-    u_ambient: [0.4, 0.4, 0.4],
+    u_normalMap: textures.nilNormal,
   });
 
-  twgl.drawBufferInfo(gl, objects.ball.bufferInfo);
+  objects.boat.forEach(({ bufferInfo, vao, uniforms }) => {
+    gl.bindVertexArray(vao);
+    twgl.setUniforms(programInfo, uniforms);
+    twgl.drawBufferInfo(gl, bufferInfo);
+  });
 }
 
 function renderOcean(app, viewMatrix, reflectionMatrix, programInfo) {
