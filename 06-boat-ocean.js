@@ -183,6 +183,27 @@ void main() {
 }
 `;
 
+const skyboxVS = `
+attribute vec2 a_position;
+uniform mat4 u_matrix;
+
+varying vec3 v_normal;
+
+void main() {
+  gl_Position = vec4(a_position, 1, 1);
+  v_normal = (u_matrix * gl_Position).xyz;
+}`;
+const skyboxFS = `
+precision highp float;
+
+varying vec3 v_normal;
+
+uniform samplerCube u_skyboxMap;
+
+void main() {
+  gl_FragColor = textureCube(u_skyboxMap, normalize(v_normal));
+}`;
+
 async function setup() {
   const canvas = document.getElementById('canvas');
   const gl = canvas.getContext('webgl');
@@ -207,6 +228,7 @@ async function setup() {
   const programInfo = twgl.createProgramInfo(gl, [vertexShaderSource, fragmentShaderSource]);
   const depthProgramInfo = twgl.createProgramInfo(gl, [vertexShaderSource, depthFragmentShaderSource]);
   const oceanProgramInfo = twgl.createProgramInfo(gl, [vertexShaderSource, oceanFragmentShaderSource]);
+  const skyboxProgramInfo = twgl.createProgramInfo(gl, [skyboxVS, skyboxFS]);
 
   const textures = twgl.createTextures(gl, {
     oceanNormal: {
@@ -253,6 +275,18 @@ async function setup() {
     };
   }
 
+  { // skybox
+    const attribs = twgl.primitives.createXYQuadVertices()
+    const bufferInfo = twgl.createBufferInfoFromArrays(gl, attribs);
+    const vao = twgl.createVAOFromBufferInfo(gl, skyboxProgramInfo, bufferInfo);
+
+    objects.skybox = {
+      attribs,
+      bufferInfo,
+      vao,
+    };
+  }
+
   objects.boat = await loadBoatModel(gl, textures, programInfo);
 
   gl.enable(gl.CULL_FACE);
@@ -260,7 +294,7 @@ async function setup() {
 
   return {
     gl,
-    programInfo, depthProgramInfo, oceanProgramInfo,
+    programInfo, depthProgramInfo, oceanProgramInfo, skyboxProgramInfo,
     textures, framebuffers, objects,
     state: {
       fieldOfView: degToRad(45),
@@ -279,7 +313,7 @@ function render(app) {
   const {
     gl,
     framebuffers, textures,
-    programInfo, depthProgramInfo, oceanProgramInfo,
+    programInfo, depthProgramInfo, oceanProgramInfo, skyboxProgramInfo,
     state,
   } = app;
 
@@ -300,17 +334,16 @@ function render(app) {
     ),
   );
 
+  const projectionMatrix = matrix4.perspective(state.fieldOfView, gl.canvas.width / gl.canvas.height, 0.1, 2000);
+
   const reflectionCameraMatrix = matrix4.multiply(
     matrix4.translate(...state.cameraViewing),
     matrix4.yRotate(state.cameraRotationXY[1]),
     matrix4.xRotate(-state.cameraRotationXY[0]),
     matrix4.translate(0, 0, state.cameraDistance),
   );
-
-  const reflectionMatrix = matrix4.multiply(
-    matrix4.perspective(state.fieldOfView, gl.canvas.width / gl.canvas.height, 0.1, 2000),
-    matrix4.inverse(reflectionCameraMatrix),
-  );
+  const inversedReflectionCameraMatrix = matrix4.inverse(reflectionCameraMatrix);
+  const reflectionMatrix = matrix4.multiply(projectionMatrix, inversedReflectionCameraMatrix);
 
   const cameraMatrix = matrix4.multiply(
     matrix4.translate(...state.cameraViewing),
@@ -318,11 +351,8 @@ function render(app) {
     matrix4.xRotate(state.cameraRotationXY[0]),
     matrix4.translate(0, 0, state.cameraDistance),
   );
-
-  const viewMatrix = matrix4.multiply(
-    matrix4.perspective(state.fieldOfView, gl.canvas.width / gl.canvas.height, 0.1, 2000),
-    matrix4.inverse(cameraMatrix),
-  );
+  const inversedCameraMatrix = matrix4.inverse(cameraMatrix);
+  const viewMatrix = matrix4.multiply(projectionMatrix, inversedCameraMatrix);
 
   const lightDirection = matrix4.transformVector(
     matrix4.multiply(
@@ -357,6 +387,9 @@ function render(app) {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     renderBoat(app, reflectionMatrix, programInfo);
+
+    gl.useProgram(skyboxProgramInfo.program);
+    renderSkybox(app, projectionMatrix, inversedReflectionCameraMatrix);
   }
 
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -364,11 +397,16 @@ function render(app) {
   twgl.resizeCanvasToDisplaySize(gl.canvas, state.resolutionRatio);
   gl.viewport(0, 0, canvas.width, canvas.height);
 
+  gl.useProgram(programInfo.program);
+
   renderBoat(app, viewMatrix, programInfo);
 
   gl.useProgram(oceanProgramInfo.program);
   twgl.setUniforms(oceanProgramInfo, globalUniforms);
   renderOcean(app, viewMatrix, reflectionMatrix, oceanProgramInfo);
+
+  gl.useProgram(skyboxProgramInfo.program);
+  renderSkybox(app, projectionMatrix, inversedCameraMatrix);
 }
 
 function renderBoat(app, viewMatrix, programInfo) {
@@ -405,7 +443,7 @@ function renderOcean(app, viewMatrix, reflectionMatrix, programInfo) {
     u_matrix: matrix4.multiply(viewMatrix, worldMatrix),
     u_worldMatrix: worldMatrix,
     u_normalMatrix: matrix4.transpose(matrix4.inverse(worldMatrix)),
-    u_diffuse: [45/255, 141/255, 169/255],
+    u_diffuse: [0, 0, 0],
     u_diffuseMap: textures.reflection,
     u_normalMap: textures.oceanNormal,
     u_specular: [1, 1, 1],
@@ -418,6 +456,28 @@ function renderOcean(app, viewMatrix, reflectionMatrix, programInfo) {
   });
 
   twgl.drawBufferInfo(gl, objects.plane.bufferInfo);
+}
+
+function renderSkybox(app, projectionMatrix, inversedCameraMatrix) {
+  const { gl, skyboxProgramInfo, objects, textures } = app;
+  gl.bindVertexArray(objects.skybox.vao);
+
+  twgl.setUniforms(skyboxProgramInfo, {
+    u_skyboxMap: textures.skybox,
+    u_matrix: matrix4.inverse(
+      matrix4.multiply(
+        projectionMatrix,
+        [
+          ...inversedCameraMatrix.slice(0, 12),
+          0, 0, 0, inversedCameraMatrix[15], // remove translation
+        ],
+      ),
+    ),
+  });
+
+  gl.depthFunc(gl.LEQUAL);
+  twgl.drawBufferInfo(gl, objects.skybox.bufferInfo);
+  gl.depthFunc(gl.LESS); // reset to default
 }
 
 function startLoop(app, now = 0) {
