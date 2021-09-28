@@ -105,8 +105,19 @@ void main() {
     1
   );
 }
+`;
 
+const textFragmentShaderSource = `
+precision highp float;
 
+uniform vec4 u_bgColor;
+uniform sampler2D u_texture;
+
+varying vec2 v_texcoord;
+
+void main() {
+  gl_FragColor = u_bgColor + texture2D(u_texture, v_texcoord);
+}
 `;
 
 const depthFragmentShaderSource = `
@@ -226,6 +237,7 @@ async function setup() {
   twgl.setAttributePrefix('a_');
 
   const programInfo = twgl.createProgramInfo(gl, [vertexShaderSource, fragmentShaderSource]);
+  const textProgramInfo = twgl.createProgramInfo(gl, [vertexShaderSource, textFragmentShaderSource]);
   const depthProgramInfo = twgl.createProgramInfo(gl, [vertexShaderSource, depthFragmentShaderSource]);
   const oceanProgramInfo = twgl.createProgramInfo(gl, [vertexShaderSource, oceanFragmentShaderSource]);
   const skyboxProgramInfo = twgl.createProgramInfo(gl, [skyboxVS, skyboxFS]);
@@ -250,6 +262,8 @@ async function setup() {
       crossOrigin: true,
     },
   });
+
+  textures.text = createTextTexture(gl);
 
   const framebuffers = {};
   framebuffers.reflection = twgl.createFramebufferInfo(gl, null, 2048, 2048);
@@ -291,10 +305,12 @@ async function setup() {
 
   gl.enable(gl.CULL_FACE);
   gl.enable(gl.DEPTH_TEST);
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
   return {
     gl,
-    programInfo, depthProgramInfo, oceanProgramInfo, skyboxProgramInfo,
+    programInfo, textProgramInfo, depthProgramInfo, oceanProgramInfo, skyboxProgramInfo,
     textures, framebuffers, objects,
     state: {
       fieldOfView: degToRad(45),
@@ -313,7 +329,7 @@ function render(app) {
   const {
     gl,
     framebuffers, textures,
-    programInfo, depthProgramInfo, oceanProgramInfo, skyboxProgramInfo,
+    programInfo, textProgramInfo, depthProgramInfo, oceanProgramInfo, skyboxProgramInfo,
     state,
   } = app;
 
@@ -407,6 +423,9 @@ function render(app) {
 
   gl.useProgram(skyboxProgramInfo.program);
   renderSkybox(app, projectionMatrix, inversedCameraMatrix);
+
+  gl.useProgram(textProgramInfo.program);
+  renderText(app, viewMatrix, textProgramInfo);
 }
 
 function renderBoat(app, viewMatrix, programInfo) {
@@ -430,6 +449,27 @@ function renderBoat(app, viewMatrix, programInfo) {
     twgl.setUniforms(programInfo, uniforms);
     twgl.drawBufferInfo(gl, bufferInfo);
   });
+}
+
+function renderText(app, viewMatrix, programInfo) {
+  const { gl, textures, objects } = app;
+
+  gl.bindVertexArray(objects.plane.vao);
+
+  const textLeftShift = gl.canvas.width / gl.canvas.height < 1.4 ? 0 : -0.9;
+  const worldMatrix = matrix4.multiply(
+    matrix4.translate(textLeftShift, 0, 0),
+    matrix4.xRotate(degToRad(45)),
+    matrix4.translate(0, 12.5, 0),
+  );
+
+  twgl.setUniforms(programInfo, {
+    u_matrix: matrix4.multiply(viewMatrix, worldMatrix),
+    u_bgColor: [0, 0, 0, 0.1],
+    u_texture: textures.text,
+  });
+
+  twgl.drawBufferInfo(gl, objects.plane.bufferInfo);
 }
 
 function renderOcean(app, viewMatrix, reflectionMatrix, programInfo) {
@@ -557,4 +597,47 @@ async function loadBoatModel(gl, textures, programInfo) {
       },
     }
   });
+}
+
+function createTextTexture(gl) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024;
+  canvas.height = 1024;
+
+  const ctx = canvas.getContext('2d');
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  ctx.fillStyle = 'white';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  ctx.font = 'bold 80px serif';
+  ctx.fillText('拖曳平移視角', canvas.width / 2, canvas.height / 5);
+
+  const secondBaseLine = 3 * canvas.height / 5;
+  const secondLineHeight = canvas.height / 7;
+  ctx.font = 'bold 70px serif';
+  ctx.fillText('透過滑鼠右鍵、滾輪', canvas.width / 2, secondBaseLine - secondLineHeight);
+  ctx.fillText('或是多指觸控手勢', canvas.width / 2, secondBaseLine);
+  ctx.fillText('對視角進行轉動、縮放', canvas.width / 2, secondBaseLine + secondLineHeight);
+
+  const texture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+
+  gl.texImage2D(
+    gl.TEXTURE_2D,
+    0, // level
+    gl.RGBA, // internalFormat
+    gl.RGBA, // format
+    gl.UNSIGNED_BYTE, // type
+    canvas, // data
+  );
+  gl.generateMipmap(gl.TEXTURE_2D);
+
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+
+  return texture;
 }
