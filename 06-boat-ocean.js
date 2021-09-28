@@ -141,7 +141,6 @@ uniform vec3 u_specular;
 uniform float u_specularExponent;
 uniform vec3 u_emissive;
 
-uniform sampler2D u_normalMap;
 uniform sampler2D u_diffuseMap;
 
 uniform sampler2D u_lightProjectionMap;
@@ -156,9 +155,11 @@ varying mat3 v_normalMatrix;
 varying vec4 v_reflectionTexcoord;
 varying vec4 v_lightProjection;
 
+vec3 oceanNormal(vec2 pos);
+
 void main() {
   vec2 reflectionTexcoord = (v_reflectionTexcoord.xy / v_reflectionTexcoord.w) * 0.5 + 0.5;
-  vec3 normal = texture2D(u_normalMap, v_texcoord * 256.0).xyz * 2.0 - 1.0;
+  vec3 normal = oceanNormal(v_worldSurface.xz);
 
   reflectionTexcoord += normal.xy * 0.1;
   vec3 diffuse = u_diffuse + texture2D(u_diffuseMap, reflectionTexcoord).rgb;
@@ -191,6 +192,51 @@ void main() {
     ),
     1
   );
+}
+
+float hash(vec2 p) {
+  p = fract(p * vec2(234.83, 194.51));
+  p += dot(p, p + 24.9);
+  return fract(p.x * p.y);
+}
+
+float localWaveHeight(vec2 id, vec2 position) {
+  float directionRad = (hash(id) - 0.5) * 0.785 - 2.355;
+  vec2 direction = vec2(cos(directionRad), sin(directionRad));
+
+  float distance = length(id + 0.5 - position);
+  float strength = smoothstep(1.5, 0.0, distance);
+
+  float waveX = dot(position, direction) * 2.5 + u_time * 5.0;
+  return exp(sin(waveX) - 1.0) * strength;
+}
+
+vec3 oceanSurfacePosition(vec2 position) {
+  position *= 6.2;
+  vec2 id = floor(position);
+
+  float height = 0.0;
+
+  for (int i = -1; i <= 1; i++) {
+    for (int j = -1; j <= 1; j++) {
+      height += localWaveHeight(id + vec2(i, j), position);
+    }
+  }
+
+  height *= 0.15;
+
+  return vec3(position, height);
+}
+
+#define OCEAN_SAMPLE_DISTANCE 0.01
+vec3 oceanNormal(vec2 position) {
+  vec3 p1 = oceanSurfacePosition(position);
+  vec3 p2 = oceanSurfacePosition(position + vec2(OCEAN_SAMPLE_DISTANCE, 0));
+  vec3 p3 = oceanSurfacePosition(position + vec2(0, OCEAN_SAMPLE_DISTANCE));
+
+  return normalize(cross(
+    normalize(p2 - p1), normalize(p3 - p1)
+  ));
 }
 `;
 
@@ -243,10 +289,6 @@ async function setup() {
   const skyboxProgramInfo = twgl.createProgramInfo(gl, [skyboxVS, skyboxFS]);
 
   const textures = twgl.createTextures(gl, {
-    oceanNormal: {
-      src: 'https://i.imgur.com/eCBtjB8h.jpg',
-      min: gl.LINEAR_MIPMAP_LINEAR, mag: gl.LINEAR, crossOrigin: true,
-    },
     nil: { src: [0, 0, 0, 255] },
     nilNormal: { src: [127, 127, 255, 255] },
     skybox: {
@@ -429,12 +471,12 @@ function render(app) {
 }
 
 function renderBoat(app, viewMatrix, programInfo) {
-  const { gl, textures, objects } = app;
+  const { gl, textures, objects, time } = app;
 
   const worldMatrix = matrix4.multiply(
     matrix4.yRotate(degToRad(45)),
-    matrix4.translate(0, 0, 0),
-    matrix4.scale(1, 1, 1),
+    matrix4.xRotate(Math.sin(time * 0.0011) * 0.03 + 0.03),
+    matrix4.translate(0, Math.sin(time * 0.0017) * 0.05, 0),
   );
 
   twgl.setUniforms(programInfo, {
